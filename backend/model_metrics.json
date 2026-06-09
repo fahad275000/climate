@@ -1,0 +1,144 @@
+{
+  "best_model": "Random Forest Regressor",
+  "models": {
+    "Linear Regression": {
+      "r2": 0.5944902500160993,
+      "rmse": 0.638753269691752,
+      "mae": 0.5198618340392622
+    },
+    "Random Forest Regressor": {
+      "r2": 0.8927202031874947,
+      "rmse": 0.32854242396538025,
+      "mae": 0.23634674264462605
+    },
+    "Gradient Boosting Regressor": {
+      "r2": 0.8614181122093169,
+      "rmse": 0.37340980924527606,
+      "mae": 0.2928196154861977
+    }
+  },
+  "feature_importance": {
+    "Pressure": 0.008936681038513158,
+    "global_radiation": 0.09414659051313916,
+    "temp_mean(c)": 0.006693694744723213,
+    "temp_min(c)": 0.02021538152456197,
+    "temp_max(c)": 0.01372721609433534,
+    "Wind_Speed": 0.8558914276389107,
+    "Wind_Bearing": 0.0003890084458164549
+  },
+  "correlation_matrix": {
+    "Pressure": {
+      "Pressure": 1.0,
+      "global_radiation": 0.22417052142151528,
+      "temp_mean(c)": 0.18410384990280715,
+      "temp_min(c)": 0.1415864277167286,
+      "temp_max(c)": 0.1988801458169059,
+      "Wind_Speed": -0.16794566930268237,
+      "Wind_Bearing": -0.006258026542972365,
+      "normalized_label": -0.043305985554369535
+    },
+    "global_radiation": {
+      "Pressure": 0.22417052142151528,
+      "global_radiation": 1.0,
+      "temp_mean(c)": 0.6870325817562022,
+      "temp_min(c)": 0.5181576718632499,
+      "temp_max(c)": 0.7579981060182036,
+      "Wind_Speed": -0.03588919087091827,
+      "Wind_Bearing": 4.055984528304918e-06,
+      "normalized_label": 0.2406962880228573
+    },
+    "temp_mean(c)": {
+      "Pressure": 0.18410384990280715,
+      "global_radiation": 0.6870325817562022,
+      "temp_mean(c)": 1.0,
+      "temp_min(c)": 0.9508156328459964,
+      "temp_max(c)": 0.9736469354724626,
+      "Wind_Speed": -0.029433793246000834,
+      "Wind_Bearing": 0.00056789321687747,
+      "normalized_label": 0.10540555961724027
+    },
+    "temp_min(c)": {
+      "Pressure": 0.1415864277167286,
+      "global_radiation": 0.5181576718632499,
+      "temp_mean(c)": 0.9508156328459964,
+      "temp_min(c)": 1.0,
+      "temp_max(c)": 0.8828684459974501,
+      "Wind_Speed": -0.022625213707134016,
+      "Wind_Bearing": 0.00014556159865550627,
+      "normalized_label": 0.03444255789471075
+    },
+    "temp_max(c)": {
+      "Pressure": 0.1988801458169059,
+      "global_radiation": 0.7579981060182036,
+      "temp_mean(c)": 0.9736469354724626,
+      "temp_min(c)": 0.8828684459974501,
+      "temp_max(c)": 1.0,
+      "Wind_Speed": -0.0319005061636556,
+      "Wind_Bearing": 0.0006710860237247395,
+      "normalized_label": 0.14443683114382025
+    },
+    "Wind_Speed": {
+      "Pressure": -0.16794566930268237,
+      "global_radiation": -0.03588919087091827,
+      "temp_mean(c)": -0.029433793246000834,
+      "temp_min(c)": -0.022625213707134016,
+      "temp_max(c)": -0.0319005061636556,
+      "Wind_Speed": 1.0,
+      "Wind_Bearing": 0.14074189386387076,
+      "normalized_label": 0.7092927114514097
+    },
+    "Wind_Bearing": {
+      "Pressure": -0.006258026542972365,
+      "global_radiation": 4.055984528304918e-06,
+      "temp_mean(c)": 0.00056789321687747,
+      "temp_min(c)": 0.00014556159865550627,
+      "temp_max(c)": 0.0006710860237247395,
+      "Wind_Speed": 0.14074189386387076,
+      "Wind_Bearing": 1.0,
+      "normalized_label": 0.0911509452654723
+    },
+    "normalized_label": {
+      "Pressure": -0.043305985554369535,
+      "global_radiation": 0.2406962880228573,
+      "temp_mean(c)": 0.10540555961724027,
+      "temp_min(c)": 0.03444255789471075,
+      "temp_max(c)": 0.14443683114382025,
+      "Wind_Speed": 0.7092927114514097,
+      "Wind_Bearing": 0.0911509452654723,
+      "normalized_label": 1.0
+    }
+  },
+  "insights": {
+    "total_records": 517048,
+    "averages": {
+      "pressure": 1011.4967672247064,
+      "radiation": 1.3078601986662748,
+      "temp_mean": 12.633529962401944,
+      "temp_min": 8.645631256672495,
+      "temp_max": 16.852902148349862,
+      "wind_speed": 11.90428171078894,
+      "wind_bearing": 195.04697823026103,
+      "risk_score": 30.463048092246755
+    },
+    "ranges": {
+      "pressure": [
+        1003.6499999999999,
+        1015.0
+      ],
+      "radiation": [
+        0.03,
+        3.6
+      ],
+      "temp_mean": [
+        -6.749999999999999,
+        28.6
+      ],
+      "wind_speed": [
+        0.0,
+        29.989999999999995
+      ]
+    }
+  },
+  "status": "success",
+  "last_trained": "2026-06-09T10:26:05.606540"
+}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operator Dashboard - Climate Platform</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+    
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="top-header">
+        <div class="page-title">
+          <h1>Analytics Dashboard</h1>
+          <p>Real-time weather parameters and calculated climate risk distribution</p>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+        </div>
+      </header>
+      
+      <!-- Statistics Widget Cards -->
+      <section class="stats-grid">
+        <div class="glass-card stat-card">
+          <div class="stat-icon">📂</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Records</div>
+            <div class="stat-value" id="stat-total-records"><div class="skeleton skeleton-text" style="width: 80px;"></div></div>
+          </div>
+        </div>
+        
+        <div class="glass-card stat-card">
+          <div class="stat-icon">🌡️</div>
+          <div class="stat-info">
+            <div class="stat-label">Avg Mean Temp</div>
+            <div class="stat-value" id="stat-avg-temp"><div class="skeleton skeleton-text" style="width: 60px;"></div></div>
+          </div>
+        </div>
+        
+        <div class="glass-card stat-card">
+          <div class="stat-icon">🎈</div>
+          <div class="stat-info">
+            <div class="stat-label">Avg Pressure</div>
+            <div class="stat-value" id="stat-avg-pressure"><div class="skeleton skeleton-text" style="width: 70px;"></div></div>
+          </div>
+        </div>
+        
+        <div class="glass-card stat-card">
+          <div class="stat-icon">💨</div>
+          <div class="stat-info">
+            <div class="stat-label">Avg Wind Speed</div>
+            <div class="stat-value" id="stat-avg-wind"><div class="skeleton skeleton-text" style="width: 50px;"></div></div>
+          </div>
+        </div>
+        
+        <div class="glass-card stat-card">
+          <div class="stat-icon">☀️</div>
+          <div class="stat-info">
+            <div class="stat-label">Avg Solar Radiation</div>
+            <div class="stat-value" id="stat-avg-radiation"><div class="skeleton skeleton-text" style="width: 60px;"></div></div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Interactive Charts -->
+      <section class="charts-grid">
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <h3>Calculated Risk Distribution</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">From predictions history</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="risk-distribution-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <h3>Pressure Trend Analysis</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">First 50 points index</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="pressure-trend-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <h3>Temperature Profile</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Min vs Mean vs Max</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="temp-comparison-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <h3>Solar Radiation vs Wind Speed</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Scattered trend</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="solar-wind-chart"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Check auth occurs in app.js
+      try {
+        // Fetch System Statistics
+        const stats = await apiFetch('/api/stats');
+        document.getElementById('stat-total-records').innerText = stats.total_records.toLocaleString();
+        document.getElementById('stat-avg-temp').innerText = `${stats.averages.temp_mean.toFixed(1)} °C`;
+        document.getElementById('stat-avg-pressure').innerText = `${stats.averages.pressure.toFixed(1)} hPa`;
+        document.getElementById('stat-avg-wind').innerText = `${stats.averages.wind_speed.toFixed(1)} m/s`;
+        document.getElementById('stat-avg-radiation').innerText = `${stats.averages.radiation.toFixed(2)} kW/m²`;
+        
+        // Fetch Dashboard Charts Data
+        const dashboardData = await apiFetch('/api/dashboard');
+        
+        // Fetch raw data samples for time series/scatter plotting
+        const rawDataRes = await apiFetch('/api/data?page=1&limit=50');
+        const rawData = rawDataRes.data;
+        
+        // Plot Chart 1: Risk Distribution (Doughnut)
+        const dist = dashboardData.predictions_distribution || { low: 0, moderate: 0, high: 0 };
+        // If history is empty, show a sample distribution based on training dataset
+        const hasHistory = (dist.low + dist.moderate + dist.high) > 0;
+        const chartData = hasHistory ? [dist.low, dist.moderate, dist.high] : [45, 35, 20];
+        const chartLabels = hasHistory ? ['Low Risk', 'Moderate Risk', 'High Risk'] : ['Low (Sample)', 'Moderate (Sample)', 'High (Sample)'];
+        
+        const ctxRisk = document.getElementById('risk-distribution-chart').getContext('2d');
+        new Chart(ctxRisk, {
+          type: 'doughnut',
+          data: {
+            labels: chartLabels,
+            datasets: [{
+              data: chartData,
+              backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim() } }
+            }
+          }
+        });
+        
+        // Plot Chart 2: Pressure Trend (Line Chart)
+        const pressureData = rawData.map(r => r.Pressure);
+        const indexLabels = rawData.map((_, i) => i + 1);
+        
+        const ctxPress = document.getElementById('pressure-trend-chart').getContext('2d');
+        new Chart(ctxPress, {
+          type: 'line',
+          data: {
+            labels: indexLabels,
+            datasets: [{
+              label: 'Pressure (hPa)',
+              data: pressureData,
+              borderColor: '#2563EB',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              borderWidth: 2,
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { grid: { color: '#E5E7EB' } }
+            }
+          }
+        });
+        
+        // Plot Chart 3: Temperature Profile (Min, Mean, Max Bar Chart)
+        const meanTempData = rawData.slice(0, 15).map(r => r['temp_mean(c)']);
+        const minTempData = rawData.slice(0, 15).map(r => r['temp_min(c)']);
+        const maxTempData = rawData.slice(0, 15).map(r => r['temp_max(c)']);
+        const labels = rawData.slice(0, 15).map((_, i) => `Sample ${i + 1}`);
+        
+        const ctxTemp = document.getElementById('temp-comparison-chart').getContext('2d');
+        new Chart(ctxTemp, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Min Temp (°C)', data: minTempData, backgroundColor: '#60A5FA' },
+              { label: 'Mean Temp (°C)', data: meanTempData, backgroundColor: '#3B82F6' },
+              { label: 'Max Temp (°C)', data: maxTempData, backgroundColor: '#1E3A8A' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { grid: { color: '#E5E7EB' } }
+            }
+          }
+        });
+        
+        // Plot Chart 4: Solar Radiation vs Wind Speed (Scatter or Bubble)
+        const scatterData = rawData.map(r => ({
+          x: r.global_radiation,
+          y: r.Wind_Speed
+        }));
+        
+        const ctxSolarWind = document.getElementById('solar-wind-chart').getContext('2d');
+        new Chart(ctxSolarWind, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: 'Radiation vs Wind',
+              data: scatterData,
+              backgroundColor: '#0F766E'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { title: { display: true, text: 'Global Radiation (kW/m²)' } },
+              y: { title: { display: true, text: 'Wind Speed (m/s)' } }
+            }
+          }
+        });
+        
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>

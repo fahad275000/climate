@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Climate Risk Intelligence Platform</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0F766E">
+</head>
+<body>
+  
+  <div class="hero-section">
+    <!-- Climate Animated Background -->
+    <canvas id="particles-canvas" class="climate-particles"></canvas>
+    
+    <div class="hero-content">
+      <div style="margin-bottom: 24px; font-size: 1.5rem;">🌍</div>
+      <h1 class="hero-title">AI Climate Risk<br>Intelligence Platform</h1>
+      <p class="hero-subtitle">
+        Deploying advanced machine learning regression models to predict regional environmental risk index values. Empowering enterprises and researchers with predictive climate analytics and real-time risk gauges.
+      </p>
+      
+      <div class="hero-ctas">
+        <a href="login.html" class="btn btn-primary" style="font-size: 1.05rem; padding: 14px 28px;">
+          <span>Get Started</span> <span>⚡</span>
+        </a>
+        <a href="#features" class="btn btn-secondary" style="font-size: 1.05rem; padding: 14px 28px;">
+          <span>Learn More</span>
+        </a>
+      </div>
+      
+      <!-- Statistic Section -->
+      <div class="stats-grid" style="margin-top: 60px;">
+        <div class="glass-card stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-info">
+            <div class="stat-label">Analyzed Records</div>
+            <div class="stat-value">517,048</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-info">
+            <div class="stat-label">Model R² Score</div>
+            <div class="stat-value">89.27%</div>
+          </div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-icon">🔮</div>
+          <div class="stat-info">
+            <div class="stat-label">Prediction Time</div>
+            <div class="stat-value">&lt; 150ms</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feature highlights -->
+      <div id="features" class="feature-highlights" style="margin-top: 80px; text-align: left;">
+        <div class="glass-card">
+          <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>🛡️</span> <span>Predictive Modeling</span>
+          </h3>
+          <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            Engineered using Random Forest Regressors, yielding highly precise hazard scores from real-time atmospheric measurements.
+          </p>
+        </div>
+        <div class="glass-card">
+          <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>🔬</span> <span>ML Pipeline Analytics</span>
+          </h3>
+          <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            Track feature importances, analyze cross-variable correlation heatmaps, and compare regressor residuals in real time.
+          </p>
+        </div>
+        <div class="glass-card">
+          <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>📂</span> <span>Data Explorer & Reports</span>
+          </h3>
+          <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            Filter and paginate the dataset, run audit logs, download predictions history, and export PDF analytical reports.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Particle Animation
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let particles = [];
+    
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+    
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = (Math.random() - 0.5) * 0.8;
+        this.size = Math.random() * 3 + 1;
+        this.color = Math.random() > 0.5 ? 'rgba(20, 184, 166, 0.15)' : 'rgba(59, 130, 246, 0.15)';
+      }
+      
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+      
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+    
+    // Seed
+    for (let i = 0; i < 60; i++) {
+      particles.push(new Particle());
+    }
+    
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // Check if token exists to redirect to Dashboard
+    if (localStorage.getItem('token')) {
+      const ctas = document.querySelector('.hero-ctas');
+      ctas.innerHTML = `
+        <a href="dashboard.html" class="btn btn-primary" style="font-size: 1.05rem; padding: 14px 28px;">
+          <span>Go to Console</span> <span>⚡</span>
+        </a>
+        <button onclick="localStorage.removeItem('token'); location.reload();" class="btn btn-secondary" style="font-size: 1.05rem; padding: 14px 28px;">
+          <span>Sign Out</span>
+        </button>
+      `;
+    }
+    
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW registration failed: ', err));
+      });
+    }
+  </script>
+</body>
+</html>

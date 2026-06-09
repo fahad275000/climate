@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Climate Calculator - Climate Platform</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+    
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="top-header">
+        <div class="page-title">
+          <h1>Climate Risk Calculator</h1>
+          <p>Input current weather conditions to calculate environmental risk index</p>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+        </div>
+      </header>
+      
+      <!-- Prediction System Layout -->
+      <div class="prediction-results" style="grid-template-columns: 1.2fr 0.8fr; align-items: start;">
+        
+        <!-- Form Card -->
+        <div class="glass-card">
+          <h3 style="margin-bottom: 24px;">Environmental Parameters</h3>
+          <form id="prediction-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              <div class="form-group">
+                <label for="pressure">Atmospheric Pressure (Pressure)</label>
+                <input type="number" step="0.1" min="950" max="1050" id="pressure" class="form-control" placeholder="e.g. 1011.4" required value="1011.4">
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 950 - 1050 hPa</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="radiation">Global Solar Radiation (global_radiation)</label>
+                <input type="number" step="0.01" min="0.0" max="5.0" id="radiation" class="form-control" placeholder="e.g. 1.3" required value="1.3">
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 0.0 - 5.0 kW/m²</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="temp-mean">Mean Temperature (temp_mean(c))</label>
+                <input type="number" step="0.1" min="-20" max="50" id="temp-mean" class="form-control" placeholder="e.g. 15.2" required value="15.2">
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: -20 to 50 °C</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="temp-min">Minimum Temperature (temp_min(c))</label>
+                <input type="number" step="0.1" min="-30" max="40" id="temp-min" class="form-control" placeholder="e.g. 10.1" required value="10.1">
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: -30 to 40 °C</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="temp-max">Maximum Temperature (temp_max(c))</label>
+                <input type="number" step="0.1" min="-10" max="60" id="temp-max" class="form-control" placeholder="e.g. 20.3" required value="20.3">
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: -10 to 60 °C</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="wind-speed">Wind Speed (Wind_Speed)</label>
+                <input type="number" step="0.1" min="0.0" max="50.0" id="wind-speed" class="form-control" placeholder="e.g. 4.8" required value="4.8">
+                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 0.0 - 50.0 m/s</small>
+              </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="wind-bearing">Wind Bearing (Wind_Bearing)</label>
+              <input type="number" step="1" min="0" max="360" id="wind-bearing" class="form-control" placeholder="e.g. 192" required value="192">
+              <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 0 - 360 degrees</small>
+            </div>
+            
+            <button type="submit" id="btn-predict" class="btn btn-primary" style="width: 100%; margin-top: 12px; padding: 12px;">
+              <span>Calculate Climate Risk Index</span> <span>🔮</span>
+            </button>
+          </form>
+        </div>
+        
+        <!-- Results Column -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- Gauge Card -->
+          <div class="glass-card" style="text-align: center;">
+            <h3 style="margin-bottom: 20px;">Calculated Index</h3>
+            
+            <div class="gauge-container" style="margin: 0 auto 16px;">
+              <div class="gauge-circle">
+                <svg class="gauge-svg" viewBox="0 0 200 200">
+                  <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
+                  <circle class="gauge-val" id="gauge-progress" cx="100" cy="100" r="80" stroke="#0F766E" stroke-dasharray="502" stroke-dashoffset="502"></circle>
+                </svg>
+                <div class="gauge-text">
+                  <div class="gauge-score" id="result-score">0.0</div>
+                  <div class="gauge-lbl">SCORE</div>
+                </div>
+              </div>
+            </div>
+            
+            <div id="result-badge-container" style="margin-bottom: 12px;">
+              <span class="risk-level-badge risk-low" id="result-badge">Enter Params</span>
+            </div>
+          </div>
+          
+          <!-- Explanation details -->
+          <div class="glass-card result-details-card" id="details-card" style="opacity: 0.6;">
+            <h3>Decision Parameters</h3>
+            <div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-weight: 500; font-size: 0.9rem;">Confidence Rating:</span>
+                <span id="result-confidence" style="font-weight: 700; font-size: 0.9rem; color: var(--primary);">0%</span>
+              </div>
+              <div class="confidence-bar-container">
+                <div class="confidence-bar-fill" id="result-confidence-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border-glass); padding-top: 16px;">
+              <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>🧠</span> <span>AI Climate Explanation</span>
+              </div>
+              <p style="font-size: 0.85rem; font-style: italic; color: var(--text-secondary);" id="result-explanation">
+                Submit the weather features to view an intelligent summary generated by the decision tree model layers.
+              </p>
+            </div>
+            
+            <button id="btn-download-pdf" class="btn btn-secondary btn-outline" style="width: 100%; display: none;">
+              <span>📄</span> <span>Export PDF Report</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const form = document.getElementById('prediction-form');
+    const btnPredict = document.getElementById('btn-predict');
+    const gaugeProgress = document.getElementById('gauge-progress');
+    const resultScore = document.getElementById('result-score');
+    const resultBadge = document.getElementById('result-badge');
+    const resultConfidence = document.getElementById('result-confidence');
+    const resultConfidenceBar = document.getElementById('result-confidence-bar');
+    const resultExplanation = document.getElementById('result-explanation');
+    const detailsCard = document.getElementById('details-card');
+    const btnDownloadPdf = document.getElementById('btn-download-pdf');
+    
+    let activePredictionId = null;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        pressure: parseFloat(document.getElementById('pressure').value),
+        global_radiation: parseFloat(document.getElementById('radiation').value),
+        temp_mean: parseFloat(document.getElementById('temp-mean').value),
+        temp_min: parseFloat(document.getElementById('temp-min').value),
+        temp_max: parseFloat(document.getElementById('temp-max').value),
+        wind_speed: parseFloat(document.getElementById('wind-speed').value),
+        wind_bearing: parseFloat(document.getElementById('wind-bearing').value)
+      };
+      
+      // Validation Check: Min Temp should not exceed Max Temp
+      if (payload.temp_min > payload.temp_max) {
+        showToast("Minimum temperature cannot exceed maximum temperature.", "error");
+        return;
+      }
+      
+      // Loading State
+      btnPredict.disabled = true;
+      btnPredict.innerHTML = `<span>Processing Climate Pipeline...</span> <div class="skeleton" style="width: 20px; height: 20px; border-radius: 50%;"></div>`;
+      
+      try {
+        const result = await apiFetch('/api/predict', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        activePredictionId = result.id;
+        
+        // Update circular gauge
+        const circumference = 502;
+        const offset = circumference - (result.risk_score / 100) * circumference;
+        gaugeProgress.style.strokeDashoffset = offset;
+        
+        // Color gauge stroke according to risk
+        let strokeColor = '#10B981'; // Green
+        let badgeClass = 'risk-low';
+        if (result.risk_category === 'Moderate Risk') {
+          strokeColor = '#F59E0B'; // Orange
+          badgeClass = 'risk-moderate';
+        } else if (result.risk_category === 'High Risk') {
+          strokeColor = '#EF4444'; // Red
+          badgeClass = 'risk-high';
+        }
+        gaugeProgress.setAttribute('stroke', strokeColor);
+        
+        // Set metrics values
+        resultScore.innerText = result.risk_score.toFixed(1);
+        resultBadge.innerText = result.risk_category;
+        resultBadge.className = `risk-level-badge ${badgeClass}`;
+        
+        resultConfidence.innerText = `${result.confidence}%`;
+        resultConfidenceBar.style.width = `${result.confidence}%`;
+        
+        resultExplanation.innerText = result.explanation;
+        detailsCard.style.opacity = '1';
+        
+        btnDownloadPdf.style.display = 'inline-flex';
+        showToast("Risk metrics computed successfully!", "success");
+      } catch (err) {
+        showToast(err.message, "error");
+      } finally {
+        btnPredict.disabled = false;
+        btnPredict.innerHTML = `<span>Calculate Climate Risk Index</span> <span>🔮</span>`;
+      }
+    });
+    
+    // Download report action
+    btnDownloadPdf.addEventListener('click', () => {
+      if (activePredictionId) {
+        const token = getAuthToken();
+        window.location.href = `/api/predictions/report/pdf?id=${activePredictionId}&authorization=Bearer ${token}`;
+      }
+    });
+  </script>
+</body>
+</html>

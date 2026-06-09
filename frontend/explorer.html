@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Explorer - Climate Platform</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+    
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="top-header">
+        <div class="page-title">
+          <h1>Raw Data Explorer</h1>
+          <p>Search, sort, filter, and export the climate record archive</p>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+        </div>
+      </header>
+      
+      <!-- Filter and Action bar -->
+      <section class="glass-card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 12px; flex: 1; min-width: 280px;">
+            <input type="text" id="search-input" class="form-control" placeholder="Search parameters (e.g. pressure, temperature, wind)..." style="flex: 1;">
+            <button id="btn-search" class="btn btn-primary">Search</button>
+          </div>
+          
+          <div style="display: flex; gap: 12px;">
+            <button id="btn-export-csv" class="btn btn-secondary">
+              <span>📥</span> <span>Export CSV</span>
+            </button>
+            <button id="btn-export-excel" class="btn btn-secondary">
+              <span>📊</span> <span>Export Excel</span>
+            </button>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Table View -->
+      <section class="glass-card">
+        <div class="table-responsive">
+          <table class="table-custom" id="data-table">
+            <thead>
+              <tr>
+                <th data-column="Pressure">Pressure ↕️</th>
+                <th data-column="global_radiation">Global Radiation ↕️</th>
+                <th data-column="temp_mean(c)">Mean Temp (°C) ↕️</th>
+                <th data-column="temp_min(c)">Min Temp (°C) ↕️</th>
+                <th data-column="temp_max(c)">Max Temp (°C) ↕️</th>
+                <th data-column="Wind_Speed">Wind Speed ↕️</th>
+                <th data-column="Wind_Bearing">Wind Bearing ↕️</th>
+                <th data-column="normalized_label">Risk Score ↕️</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8"><div class="skeleton skeleton-text" style="margin: 10px;"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Pagination Section -->
+        <div class="pagination-controls">
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-secondary);" id="pagination-summary">Showing 0 to 0 of 0 entries</span>
+          </div>
+          
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label for="limit-select" style="font-size: 0.85rem; color: var(--text-secondary);">Show:</label>
+            <select id="limit-select" class="form-control" style="width: auto; padding: 6px 12px; font-size: 0.85rem;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            
+            <button id="btn-prev" class="btn btn-secondary" style="padding: 6px 12px;">Prev</button>
+            <span id="page-num" style="font-weight: 600; font-size: 0.9rem; margin: 0 8px;">1</span>
+            <button id="btn-next" class="btn btn-secondary" style="padding: 6px 12px;">Next</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let currentPage = 1;
+    let currentLimit = 10;
+    let currentSearch = '';
+    let currentSortBy = '';
+    let currentSortOrder = 'asc';
+    let totalEntries = 0;
+    let fetchedData = [];
+
+    async function loadTable() {
+      const tableBody = document.querySelector('#data-table tbody');
+      tableBody.innerHTML = `<tr><td colspan="8"><div class="skeleton skeleton-text" style="margin: 10px;"></div><div class="skeleton skeleton-text" style="margin: 10px;"></div></td></tr>`;
+      
+      try {
+        let endpoint = `/api/data?page=${currentPage}&limit=${currentLimit}`;
+        if (currentSearch) endpoint += `&search=${encodeURIComponent(currentSearch)}`;
+        if (currentSortBy) endpoint += `&sortBy=${currentSortBy}&sortOrder=${currentSortOrder}`;
+        
+        const response = await apiFetch(endpoint);
+        fetchedData = response.data;
+        totalEntries = response.total;
+        
+        tableBody.innerHTML = '';
+        if (fetchedData.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No records match the active query.</td></tr>`;
+          document.getElementById('pagination-summary').innerText = 'Showing 0 to 0 of 0 entries';
+          return;
+        }
+        
+        fetchedData.forEach(row => {
+          const riskLabel = row.normalized_label;
+          let riskBadge = '<span class="risk-level-badge risk-low" style="font-size:0.75rem;">Low</span>';
+          if (riskLabel === 1) riskBadge = '<span class="risk-level-badge risk-moderate" style="font-size:0.75rem;">Mod</span>';
+          if (riskLabel >= 2) riskBadge = '<span class="risk-level-badge risk-high" style="font-size:0.75rem;">High</span>';
+          
+          tableBody.innerHTML += `
+            <tr>
+              <td>${row.Pressure.toFixed(1)}</td>
+              <td>${row.global_radiation.toFixed(2)}</td>
+              <td>${row['temp_mean(c)'].toFixed(1)}</td>
+              <td>${row['temp_min(c)'].toFixed(1)}</td>
+              <td>${row['temp_max(c)'].toFixed(1)}</td>
+              <td>${row.Wind_Speed.toFixed(1)}</td>
+              <td>${row.Wind_Bearing}</td>
+              <td>${riskBadge}</td>
+            </tr>
+          `;
+        });
+        
+        // Update pagination details
+        const start = (currentPage - 1) * currentLimit + 1;
+        const end = Math.min(currentPage * currentLimit, totalEntries);
+        document.getElementById('pagination-summary').innerText = `Showing ${start} to ${end} of ${totalEntries.toLocaleString()} entries`;
+        document.getElementById('page-num').innerText = currentPage;
+        
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    // Pagination Listeners
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        loadTable();
+      }
+    });
+
+    document.getElementById('btn-next').addEventListener('click', () => {
+      if (currentPage * currentLimit < totalEntries) {
+        currentPage++;
+        loadTable();
+      }
+    });
+
+    document.getElementById('limit-select').addEventListener('change', (e) => {
+      currentLimit = parseInt(e.target.value);
+      currentPage = 1;
+      loadTable();
+    });
+
+    // Search Action
+    document.getElementById('btn-search').addEventListener('click', () => {
+      currentSearch = document.getElementById('search-input').value;
+      currentPage = 1;
+      loadTable();
+    });
+
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        currentSearch = e.target.value;
+        currentPage = 1;
+        loadTable();
+      }
+    });
+
+    // Sorting Headers
+    document.querySelectorAll('#data-table th').forEach(th => {
+      th.addEventListener('click', () => {
+        const column = th.getAttribute('data-column');
+        if (currentSortBy === column) {
+          currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          currentSortBy = column;
+          currentSortOrder = 'asc';
+        }
+        
+        // Reset labels
+        document.querySelectorAll('#data-table th').forEach(el => {
+          const colName = el.getAttribute('data-column');
+          let cleanText = el.innerText.replace(/[↕️🔼🔽]/g, '').trim();
+          el.innerText = cleanText + ' ↕️';
+        });
+        
+        const cleanText = th.innerText.replace(' ↕️', '').trim();
+        th.innerText = cleanText + (currentSortOrder === 'asc' ? ' 🔼' : ' 🔽');
+        
+        currentPage = 1;
+        loadTable();
+      });
+    });
+
+    // Export Helpers
+    function exportToCSV(filename, list) {
+      if (list.length === 0) return;
+      const headers = Object.keys(list[0]);
+      let csv = headers.join(',') + '\r\n';
+      list.forEach(row => {
+        csv += headers.map(h => row[h]).join(',') + '\r\n';
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Data exported successfully!", "success");
+    }
+
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+      exportToCSV('ClimateArchive.csv', fetchedData);
+    });
+
+    document.getElementById('btn-export-excel').addEventListener('click', () => {
+      exportToCSV('ClimateArchive.xls', fetchedData); // excel opening CSV tab
+    });
+
+    document.addEventListener('DOMContentLoaded', loadTable);
+  </script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal - Climate Platform</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+    
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="top-header">
+        <div class="page-title">
+          <h1>Security & Platform Control</h1>
+          <p>Model maintenance, retraining logs, user audits, and system statistics</p>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+        </div>
+      </header>
+      
+      <!-- Retraining Console -->
+      <section class="glass-card" style="margin-bottom: 24px;">
+        <h3>Model Operations Center</h3>
+        <p style="margin-bottom: 20px; font-size: 0.9rem;">Trigger pipeline retraining to rebuild Random Forest, Gradient Boosting, and Linear Regression layers on the full clean dataset.</p>
+        
+        <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-bottom: 24px;">
+          <button id="btn-retrain" class="btn btn-primary" style="padding: 12px 24px;">
+            <span>🔄</span> <span>Trigger Pipeline Retraining</span>
+          </button>
+          
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 600; font-size: 0.9rem;">Model Status:</span>
+            <span class="risk-level-badge risk-low" id="retrain-status">Loading...</span>
+          </div>
+          
+          <div style="font-size: 0.85rem; color: var(--text-muted);" id="last-trained-time">
+            Last Rebuilt: N/A
+          </div>
+        </div>
+        
+        <!-- Scrolling Console Logs -->
+        <div style="background: #1E293B; color: #38BDF8; font-family: monospace; font-size: 0.8rem; padding: 16px; border-radius: 8px; max-height: 200px; overflow-y: auto; margin-top: 16px; border: 1px solid #334155;" id="console-logs">
+          [SYSTEM] Initializing console monitoring module...
+        </div>
+      </section>
+      
+      <!-- Prediction Logs & History -->
+      <section class="glass-card" style="margin-bottom: 24px;">
+        <h3>Operational Prediction Logs</h3>
+        <p style="margin-bottom: 20px; font-size: 0.9rem;">Archive of prediction events triggered by platform users.</p>
+        
+        <div class="table-responsive">
+          <table class="table-custom" id="prediction-logs-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Operator</th>
+                <th>Avg Temp</th>
+                <th>Radiation</th>
+                <th>Risk Score</th>
+                <th>Category</th>
+                <th>Report</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="7"><div class="skeleton skeleton-text" style="margin: 10px;"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      
+      <!-- Security Auditing Logs -->
+      <section class="glass-card">
+        <h3>Security Audit Logs</h3>
+        <p style="margin-bottom: 20px; font-size: 0.9rem;">Complete access ledger of logins, account creation, and model rebuilds.</p>
+        
+        <div class="table-responsive">
+          <table class="table-custom" id="audit-logs-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>User / Node</th>
+                <th>Event</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="4"><div class="skeleton skeleton-text" style="margin: 10px;"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let pollInterval = null;
+
+    function addConsoleLog(message, type = 'info') {
+      const consoleEl = document.getElementById('console-logs');
+      const timestamp = new Date().toLocaleTimeString();
+      let color = '#38BDF8'; // Blue
+      if (type === 'success') color = '#34D399'; // Green
+      if (type === 'error') color = '#F87171'; // Red
+      
+      consoleEl.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    async function checkRetrainStatus() {
+      try {
+        const status = await apiFetch('/api/retrain/status');
+        const badge = document.getElementById('retrain-status');
+        const lastTrained = document.getElementById('last-trained-time');
+        
+        badge.innerText = status.retraining_status.toUpperCase();
+        
+        if (status.retraining_status === 'training') {
+          badge.className = 'risk-level-badge risk-moderate';
+          document.getElementById('btn-retrain').disabled = true;
+          document.getElementById('btn-retrain').innerText = 'Rebuilding...';
+          addConsoleLog("Pipeline execution in progress. Fitting model parameters...", 'info');
+          
+          if (!pollInterval) {
+            pollInterval = setInterval(checkRetrainStatus, 3000);
+          }
+        } else {
+          document.getElementById('btn-retrain').disabled = false;
+          document.getElementById('btn-retrain').innerHTML = '<span>🔄</span> <span>Trigger Pipeline Retraining</span>';
+          
+          if (status.retraining_status === 'success') {
+            badge.className = 'risk-level-badge risk-low';
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+              addConsoleLog("Pipeline built successfully. Random Forest fit parameters updated.", 'success');
+              loadAdminData(); // Refresh history/logs
+            }
+          } else if (status.retraining_status === 'failed') {
+            badge.className = 'risk-level-badge risk-high';
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+              addConsoleLog(`Pipeline execution failed: ${status.retraining_error}`, 'error');
+            }
+          } else {
+            badge.className = 'risk-level-badge risk-low';
+            badge.innerText = 'READY';
+          }
+        }
+        
+        if (status.last_retrained) {
+          lastTrained.innerText = `Last Rebuilt: ${new Date(status.last_retrained).toLocaleString()}`;
+        }
+      } catch (err) {
+        addConsoleLog(`System polling failure: ${err.message}`, 'error');
+      }
+    }
+
+    async function loadAdminData() {
+      try {
+        // Fetch Prediction Logs
+        const predictions = await apiFetch('/api/predictions/history');
+        const predTableBody = document.querySelector('#prediction-logs-table tbody');
+        predTableBody.innerHTML = '';
+        
+        if (predictions.length === 0) {
+          predTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No predictions recorded.</td></tr>';
+        } else {
+          predictions.forEach(p => {
+            const time = new Date(p.timestamp).toLocaleString();
+            let riskBadge = '<span class="risk-level-badge risk-low" style="font-size:0.75rem;">Low</span>';
+            if (p.risk_category === 'Moderate Risk') riskBadge = '<span class="risk-level-badge risk-moderate" style="font-size:0.75rem;">Moderate</span>';
+            if (p.risk_category === 'High Risk') riskBadge = '<span class="risk-level-badge risk-high" style="font-size:0.75rem;">High</span>';
+            
+            predTableBody.innerHTML += `
+              <tr>
+                <td>${time}</td>
+                <td>${p.username}</td>
+                <td>${p.temp_mean.toFixed(1)} °C</td>
+                <td>${p.global_radiation.toFixed(2)}</td>
+                <td style="font-weight:600;">${p.risk_score.toFixed(1)}</td>
+                <td>${riskBadge}</td>
+                <td>
+                  <button class="btn btn-secondary btn-outline" style="padding: 4px 8px; font-size:0.75rem;" onclick="downloadReport(${p.id})">
+                    PDF 📥
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+        
+        // Fetch Audit Logs
+        const audits = await apiFetch('/api/audit-logs');
+        const auditTableBody = document.querySelector('#audit-logs-table tbody');
+        auditTableBody.innerHTML = '';
+        
+        if (audits.length === 0) {
+          auditTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No audits recorded.</td></tr>';
+        } else {
+          audits.forEach(a => {
+            const time = new Date(a.timestamp).toLocaleString();
+            auditTableBody.innerHTML += `
+              <tr>
+                <td>${time}</td>
+                <td><strong>${a.username}</strong></td>
+                <td><span class="risk-level-badge risk-moderate" style="background:#DBEAFE; color:#1E40AF; font-size:0.75rem;">${a.action}</span></td>
+                <td style="font-size:0.85rem; color:var(--text-secondary);">${a.details}</td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    }
+
+    // Trigger Retraining action
+    document.getElementById('btn-retrain').addEventListener('click', async () => {
+      try {
+        addConsoleLog("Connecting to machine learning training sub-process...", 'info');
+        const response = await apiFetch('/api/retrain', { method: 'POST' });
+        showToast(response.message, "success");
+        addConsoleLog("Retraining pipeline job spawned in background.", 'success');
+        checkRetrainStatus();
+      } catch (err) {
+        showToast(err.message, "error");
+        addConsoleLog(`Failed to spawn rebuild: ${err.message}`, 'error');
+      }
+    });
+
+    // Download PDF helper
+    window.downloadReport = (id) => {
+      const token = getAuthToken();
+      window.location.href = `/api/predictions/report/pdf?id=${id}&authorization=Bearer ${token}`;
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (getUserRole() !== 'admin') {
+        showToast("Unauthorized page redirect.", "error");
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        return;
+      }
+      
+      checkRetrainStatus();
+      loadAdminData();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Analytics - Climate Platform</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div id="sidebar-container"></div>
+    
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <header class="top-header">
+        <div class="page-title">
+          <h1>Model Analytics & Pipeline</h1>
+          <p>Machine learning models validation, evaluation metrics, and feature relevance analysis</p>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+        </div>
+      </header>
+      
+      <!-- Model Metrics Summary -->
+      <section class="glass-card" style="margin-bottom: 24px;">
+        <h3>Pipeline Performance Summary</h3>
+        <p style="margin-bottom: 20px; font-size: 0.9rem;">Evaluation results on the test partition (20% split) for all tested regressor layers.</p>
+        
+        <div class="table-responsive">
+          <table class="table-custom" id="metrics-table">
+            <thead>
+              <tr>
+                <th>Model Architecture</th>
+                <th>R² Score</th>
+                <th>RMSE (Root MSE)</th>
+                <th>MAE (Mean Abs Error)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="5"><div class="skeleton skeleton-text" style="margin: 10px;"></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      
+      <!-- Feature Importance & Correlation Grid -->
+      <section class="charts-grid">
+        <!-- Feature Importance Chart -->
+        <div class="glass-card chart-card">
+          <div class="chart-header">
+            <h3>Feature Importance</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Relative importance in decision path</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="importance-chart"></canvas>
+          </div>
+        </div>
+        
+        <!-- Correlation Heatmap -->
+        <div class="glass-card chart-card" style="display: flex; flex-direction: column;">
+          <div class="chart-header">
+            <h3>Correlation Matrix Heatmap</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Variable co-dependency</span>
+          </div>
+          <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;" id="heatmap-container">
+            <div class="skeleton skeleton-chart" style="width: 100%; height: 250px;"></div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- Dataset Insights -->
+      <section class="glass-card">
+        <h3>Pipeline Data Insights</h3>
+        <p style="margin-bottom: 20px; font-size: 0.9rem;">Statistical values from the outlier-capped, clean dataset partition.</p>
+        
+        <div class="stats-grid" id="insights-grid">
+          <div class="skeleton skeleton-text" style="grid-column: span 3; height: 100px;"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Fetch Model Metrics
+        const metrics = await apiFetch('/api/model-metrics');
+        
+        // Populating metrics table
+        const tableBody = document.querySelector('#metrics-table tbody');
+        tableBody.innerHTML = '';
+        
+        let bestModelName = '';
+        let highestR2 = -1;
+        
+        Object.entries(metrics).forEach(([name, m]) => {
+          if (m.r2 > highestR2) {
+            highestR2 = m.r2;
+            bestModelName = name;
+          }
+        });
+        
+        Object.entries(metrics).forEach(([name, m]) => {
+          const isBest = name === bestModelName;
+          const statusLabel = isBest ? '<span class="risk-level-badge risk-low" style="font-size:0.75rem;">Selected (Best)</span>' : '<span class="risk-level-badge risk-moderate" style="font-size:0.75rem; background:#E5E7EB; color:#4B5563;">Candidate</span>';
+          
+          tableBody.innerHTML += `
+            <tr style="${isBest ? 'font-weight: 600; background: var(--bg-tertiary);' : ''}">
+              <td>${name}</td>
+              <td>${(m.r2 * 100).toFixed(2)}%</td>
+              <td>${m.rmse.toFixed(4)}</td>
+              <td>${m.mae.toFixed(4)}</td>
+              <td>${statusLabel}</td>
+            </tr>
+          `;
+        });
+        
+        // Fetch Feature Importance & Correlation
+        const analytics = await apiFetch('/api/feature-importance');
+        
+        // Feature Importance Chart
+        const featLabels = Object.keys(analytics.feature_importance);
+        const featValues = Object.values(analytics.feature_importance);
+        
+        const ctxImportance = document.getElementById('importance-chart').getContext('2d');
+        new Chart(ctxImportance, {
+          type: 'bar',
+          data: {
+            labels: featLabels,
+            datasets: [{
+              label: 'Feature Importance Weight',
+              data: featValues,
+              backgroundColor: 'rgba(20, 184, 166, 0.75)',
+              borderColor: 'rgba(20, 184, 166, 1)',
+              borderWidth: 1,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            indexAxis: 'y', // horizontal bar chart
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false } }
+            }
+          }
+        });
+        
+        // Correlation Heatmap
+        const matrix = analytics.correlation_matrix;
+        const columns = Object.keys(matrix);
+        const heatmapContainer = document.getElementById('heatmap-container');
+        heatmapContainer.innerHTML = '';
+        
+        const heatmapWrapper = document.createElement('div');
+        heatmapWrapper.style.display = 'grid';
+        heatmapWrapper.style.gridTemplateColumns = `repeat(${columns.length}, 1fr)`;
+        heatmapWrapper.style.gap = '2px';
+        heatmapWrapper.style.width = '100%';
+        heatmapWrapper.style.maxWidth = '360px';
+        heatmapWrapper.style.background = 'var(--border-glass)';
+        heatmapWrapper.style.padding = '2px';
+        heatmapWrapper.style.borderRadius = '8px';
+        
+        columns.forEach(rowKey => {
+          columns.forEach(colKey => {
+            const corrVal = matrix[rowKey][colKey];
+            const cell = document.createElement('div');
+            cell.className = 'heatmap-cell';
+            
+            // Set cell color opacity depending on positive/negative correlation
+            let color = '255,255,255'; // default
+            if (corrVal >= 0) {
+              color = '15, 118, 110'; // Teal
+            } else {
+              color = '239, 68, 68'; // Red
+            }
+            
+            cell.style.backgroundColor = `rgba(${color}, ${Math.abs(corrVal).toFixed(2)})`;
+            cell.style.color = Math.abs(corrVal) > 0.4 ? '#FFF' : 'var(--text-primary)';
+            cell.innerText = corrVal.toFixed(2);
+            cell.title = `Corr(${rowKey}, ${colKey}) = ${corrVal.toFixed(4)}`;
+            heatmapWrapper.appendChild(cell);
+          });
+        });
+        
+        // Labels layout for heatmap
+        heatmapContainer.appendChild(heatmapWrapper);
+        const labelHint = document.createElement('div');
+        labelHint.style.fontSize = '0.75rem';
+        labelHint.style.marginTop = '12px';
+        labelHint.style.color = 'var(--text-muted)';
+        labelHint.innerText = 'Features sequence matches top-to-bottom and left-to-right grid layout.';
+        heatmapContainer.appendChild(labelHint);
+        
+        // Populate Dataset Insights
+        const stats = await apiFetch('/api/stats');
+        const insightsGrid = document.getElementById('insights-grid');
+        insightsGrid.innerHTML = `
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <div class="stat-label">Min Atmospheric Pressure</div>
+              <div class="stat-value">${stats.averages.pressure.toFixed(1)} hPa</div>
+            </div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <div class="stat-label">Average Temperature</div>
+              <div class="stat-value">${stats.averages.temp_mean.toFixed(1)} °C</div>
+            </div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <div class="stat-label">Maximum Solar radiation</div>
+              <div class="stat-value">${stats.averages.radiation.toFixed(2)} kW/m²</div>
+            </div>
+          </div>
+        `;
+        
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>

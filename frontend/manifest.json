@@ -1,0 +1,17 @@
+{
+  "short_name": "ClimateRisk",
+  "name": "AI Climate Risk Intelligence Platform",
+  "description": "Enterprise Grade Climate Hazard Index Calculator and Predictor Node",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0F766E",
+  "background_color": "#FAFAFB",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

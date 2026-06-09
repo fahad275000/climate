@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Identity Hub - Climate Platform</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; position: relative;">
+
+  <!-- Theme Toggle -->
+  <div style="position: absolute; top: 24px; right: 24px; display: flex; gap: 16px; align-items: center;">
+    <a href="index.html" class="btn btn-secondary">← Back Home</a>
+    <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+  </div>
+
+  <div class="glass-card" style="width: 100%; max-width: 420px; padding: 40px;">
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="font-size: 2.25rem; margin-bottom: 8px;">🌍</div>
+      <h2 style="font-size: 1.5rem; font-family: var(--font-title); margin-bottom: 4px;">Access Console</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted);">Climate Risk Intelligence Center</p>
+    </div>
+    
+    <!-- Tab Headers -->
+    <div style="display: flex; border-bottom: 1px solid var(--border-glass); margin-bottom: 24px;">
+      <button id="tab-login" class="btn" style="flex: 1; border-radius: 0; background: transparent; border-bottom: 2px solid var(--primary); color: var(--primary);">Login</button>
+      <button id="tab-register" class="btn" style="flex: 1; border-radius: 0; background: transparent; border-bottom: 2px solid transparent; color: var(--text-secondary);">Register</button>
+    </div>
+    
+    <!-- Login Form -->
+    <form id="login-form">
+      <div class="form-group">
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" class="form-control" placeholder="Enter username" required autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-bottom: 28px;">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Sign In</button>
+    </form>
+    
+    <!-- Register Form (hidden initially) -->
+    <form id="register-form" style="display: none;">
+      <div class="form-group">
+        <label for="register-username">Choose Username</label>
+        <input type="text" id="register-username" class="form-control" placeholder="Create username" required autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-bottom: 28px;">
+        <label for="register-password">Create Password</label>
+        <input type="password" id="register-password" class="form-control" placeholder="Create password" required autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Create Account</button>
+    </form>
+    
+    <div style="margin-top: 24px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+      Demo Accounts:<br>
+      Admin: <strong>admin</strong> / <strong>admin123</strong><br>
+      User: <strong>user</strong> / <strong>user123</strong>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Tab switching logic
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    
+    tabLogin.addEventListener('click', () => {
+      tabLogin.style.borderBottomColor = 'var(--primary)';
+      tabLogin.style.color = 'var(--primary)';
+      tabRegister.style.borderBottomColor = 'transparent';
+      tabRegister.style.color = 'var(--text-secondary)';
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'none';
+    });
+    
+    tabRegister.addEventListener('click', () => {
+      tabRegister.style.borderBottomColor = 'var(--primary)';
+      tabRegister.style.color = 'var(--primary)';
+      tabLogin.style.borderBottomColor = 'transparent';
+      tabLogin.style.color = 'var(--text-secondary)';
+      registerForm.style.display = 'block';
+      loginForm.style.display = 'none';
+    });
+    
+    // Auth actions
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      
+      try {
+        const data = await apiFetch('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ username, password })
+        });
+        
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('username', data.username);
+        
+        showToast("Logged in successfully!", "success");
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1000);
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+    
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('register-username').value;
+      const password = document.getElementById('register-password').value;
+      
+      try {
+        const data = await apiFetch('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ username, password })
+        });
+        
+        showToast("Registration successful! You can now log in.", "success");
+        tabLogin.click();
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>
