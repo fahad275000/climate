@@ -120,7 +120,12 @@
               </div>
             </div>
             
-            <div style="border-top: 1px solid var(--border-glass); padding-top: 16px;">
+            <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+              <span style="font-weight: 500; color: var(--text-secondary);">Execution Node:</span>
+              <span id="gpu-status-line" style="font-weight: 600; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-secondary);">Loading...</span>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border-glass); padding-top: 16px; margin-top: 16px;">
               <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
                 <span>🧠</span> <span>AI Climate Explanation</span>
               </div>
@@ -354,6 +359,27 @@
         window.location.href = `/api/predictions/report/pdf?id=${activePredictionId}&authorization=Bearer ${token}`;
       }
     });
+
+    async function loadHardwareDiagnostics() {
+      try {
+        const hw = await apiFetch('/api/hardware');
+        const gpuLine = document.getElementById('gpu-status-line');
+        if (gpuLine) {
+          if (hw.gpu_detected) {
+            gpuLine.innerText = `GPU Active (${hw.device_name})`;
+            gpuLine.style.background = 'rgba(15, 118, 110, 0.1)';
+            gpuLine.style.color = '#0F766E';
+          } else {
+            gpuLine.innerText = `CPU Active (${hw.device_name})`;
+            gpuLine.style.background = 'var(--bg-tertiary)';
+            gpuLine.style.color = 'var(--text-secondary)';
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch hardware diagnostics in predictor page:", err);
+      }
+    }
+    loadHardwareDiagnostics();
   </script>
 </body>
 </html>

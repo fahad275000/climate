@@ -23,6 +23,34 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 let rawDataset = [];
 const csvFilePath = path.join(__dirname, '../dataset/Combined12.csv');
 
+// Hardware Cache for GPU/CUDA Diagnostics
+let hardwareInfo = {
+  cuda_available: false,
+  gpu_detected: false,
+  device_name: "Generic CPU",
+  driver_version: "N/A",
+  execution_mode: "CPU",
+  is_h200_active: false
+};
+
+// Check hardware on startup
+const checkHardwareOnStartup = () => {
+  const scriptPath = path.join(__dirname, 'check_hardware.py');
+  exec(`python "${scriptPath}"`, (error, stdout, stderr) => {
+    if (!error) {
+      try {
+        hardwareInfo = JSON.parse(stdout.trim());
+        console.log("Hardware diagnostics loaded:", hardwareInfo);
+      } catch (e) {
+        console.error("Failed to parse hardware info on startup:", e);
+      }
+    } else {
+      console.error("Failed to execute hardware diagnostics on startup:", error);
+    }
+  });
+};
+checkHardwareOnStartup();
+
 function loadDatasetAsync() {
   console.log("Starting background load of climate dataset...");
   if (!fs.existsSync(csvFilePath)) {
@@ -417,33 +445,38 @@ app.get('/api/predictions/report/pdf', authenticateToken, async (req, res) => {
     doc.font('Helvetica-Bold').text(`Generated For: `, 50, 145).font('Helvetica').text(`${pred.username}`, 130, 145);
     doc.font('Helvetica-Bold').text(`Timestamp: `, 50, 160).font('Helvetica').text(`${new Date(pred.timestamp).toUTCString()}`, 120, 160);
     
+    const execNodeText = hardwareInfo.gpu_detected 
+      ? `GPU Acceleration (CUDA - ${hardwareInfo.device_name})` 
+      : `CPU Execution (${hardwareInfo.device_name})`;
+    doc.font('Helvetica-Bold').text(`Execution Node: `, 50, 175).font('Helvetica').text(execNodeText, 145, 175);
+    
     // Divider
-    doc.moveTo(50, 185).lineTo(562, 185).strokeColor('#E5E7EB').stroke();
+    doc.moveTo(50, 195).lineTo(562, 195).strokeColor('#E5E7EB').stroke();
     
     // Risk Score Section
     doc.moveDown(3);
-    doc.fillColor(primaryColor).fontSize(16).font('Helvetica-Bold').text('Environmental Risk Summary', 50, 205);
+    doc.fillColor(primaryColor).fontSize(16).font('Helvetica-Bold').text('Environmental Risk Summary', 50, 215);
     
     // Glassmorphism Card Style
-    doc.fillColor(lightBg).rect(50, 225, 512, 80).fill();
+    doc.fillColor(lightBg).rect(50, 235, 512, 80).fill();
     
     // Risk Score Metric
-    doc.fillColor(textColor).fontSize(12).font('Helvetica-Bold').text('Calculated Risk Score:', 70, 245);
+    doc.fillColor(textColor).fontSize(12).font('Helvetica-Bold').text('Calculated Risk Score:', 70, 255);
     
     let scoreColor = '#10B981'; // Green (Low)
     if (pred.risk_category === 'Moderate Risk') scoreColor = '#F59E0B'; // Orange
     if (pred.risk_category === 'High Risk') scoreColor = '#EF4444'; // Red
     
-    doc.fillColor(scoreColor).fontSize(28).font('Helvetica-Bold').text(`${pred.risk_score} / 100`, 70, 260);
-    doc.fontSize(14).font('Helvetica-Bold').text(`Category: ${pred.risk_category}`, 280, 245);
-    doc.fillColor(textColor).fontSize(10).font('Helvetica').text(`Prediction Confidence: ${pred.confidence}%`, 280, 275);
+    doc.fillColor(scoreColor).fontSize(28).font('Helvetica-Bold').text(`${pred.risk_score} / 100`, 70, 270);
+    doc.fontSize(14).font('Helvetica-Bold').text(`Category: ${pred.risk_category}`, 280, 255);
+    doc.fillColor(textColor).fontSize(10).font('Helvetica').text(`Prediction Confidence: ${pred.confidence}%`, 280, 285);
     
     // Environmental Inputs
     doc.moveDown(5);
-    doc.fillColor(secondaryColor).fontSize(14).font('Helvetica-Bold').text('Weather Parameters Inputs', 50, 330);
+    doc.fillColor(secondaryColor).fontSize(14).font('Helvetica-Bold').text('Weather Parameters Inputs', 50, 345);
     
     // Table Headers
-    const startY = 355;
+    const startY = 370;
     doc.fillColor(lightBg).rect(50, startY, 512, 20).fill();
     doc.fillColor(textColor).fontSize(9).font('Helvetica-Bold');
     doc.text('Parameter', 60, startY + 5);
@@ -473,12 +506,12 @@ app.get('/api/predictions/report/pdf', authenticateToken, async (req, res) => {
     
     // AI Explanation Section
     doc.moveDown(3);
-    doc.fillColor(primaryColor).fontSize(14).font('Helvetica-Bold').text('AI Explanation & Intelligence Report', 50, 530);
-    doc.fillColor('#F0FDFA').rect(50, 550, 512, 70).fill();
-    doc.strokeColor('#CCFBF1').rect(50, 550, 512, 70).stroke();
+    doc.fillColor(primaryColor).fontSize(14).font('Helvetica-Bold').text('AI Explanation & Intelligence Report', 50, 550);
+    doc.fillColor('#F0FDFA').rect(50, 570, 512, 70).fill();
+    doc.strokeColor('#CCFBF1').rect(50, 570, 512, 70).stroke();
     
-    doc.fillColor(primaryColor).fontSize(10).font('Helvetica-Bold').text('AI Generated Explanation:', 65, 565);
-    doc.fillColor(textColor).fontSize(10).font('Helvetica-Oblique').text(`"${pred.explanation}"`, 65, 585, { width: 480 });
+    doc.fillColor(primaryColor).fontSize(10).font('Helvetica-Bold').text('AI Generated Explanation:', 65, 585);
+    doc.fillColor(textColor).fontSize(10).font('Helvetica-Oblique').text(`"${pred.explanation}"`, 65, 605, { width: 480 });
     
     // Footer Section
     doc.fillColor('#9CA3AF').fontSize(8).font('Helvetica').text('Disclaimer: This report is generated automatically by the AI Climate Risk Intelligence model using meteorological inputs. Predictions are mathematical estimations based on past models and should be used with professional diligence.', 50, 720, { align: 'center', width: 512 });
@@ -508,6 +541,7 @@ app.get('/api/hardware', authenticateToken, (req, res) => {
     }
     try {
       const result = JSON.parse(stdout.trim());
+      hardwareInfo = result;
       res.json(result);
     } catch (e) {
       res.json({
