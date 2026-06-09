@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Climate Calculator - Climate Platform</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -134,6 +135,22 @@
           </div>
         </div>
       </div>
+
+      <!-- 5-Day Forecast Panel -->
+      <section class="glass-card" id="forecast-panel" style="margin-top: 32px; display: none;">
+        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <span>🔮</span> <span>5-Day Climate Risk & Weather Forecast</span>
+        </h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 24px;">Autoregressive prediction arrays for weather elements and index metrics over a 5-step horizon.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px;" id="forecast-cards-container">
+          <!-- Populated dynamically -->
+        </div>
+        
+        <div style="height: 320px; position: relative;">
+          <canvas id="forecast-trend-chart"></canvas>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -151,6 +168,78 @@
     const btnDownloadPdf = document.getElementById('btn-download-pdf');
     
     let activePredictionId = null;
+    let forecastChartInstance = null;
+
+    function renderForecastChart(labels, temps, risks, winds) {
+      const ctx = document.getElementById('forecast-trend-chart').getContext('2d');
+      if (forecastChartInstance) {
+        forecastChartInstance.destroy();
+      }
+      
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDark ? '#D1D5DB' : '#1F2937';
+      const gridColor = isDark ? '#374151' : '#E5E7EB';
+      
+      forecastChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Risk Score (0-100)',
+              data: risks,
+              borderColor: '#EF4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              borderWidth: 3,
+              tension: 0.3,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Forecasted Mean Temp (°C)',
+              data: temps,
+              borderColor: '#3B82F6',
+              backgroundColor: 'rgba(59, 130, 246, 0.05)',
+              borderWidth: 2,
+              tension: 0.3,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Wind Speed (m/s)',
+              data: winds,
+              borderColor: '#14B8A6',
+              backgroundColor: 'rgba(20, 184, 166, 0.05)',
+              borderWidth: 1.5,
+              tension: 0.3,
+              borderDash: [5, 5],
+              yAxisID: 'y'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: textColor }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: gridColor },
+              ticks: { color: textColor }
+            },
+            y: {
+              type: 'linear',
+              position: 'left',
+              grid: { color: gridColor },
+              ticks: { color: textColor },
+              min: 0,
+              max: 100
+            }
+          }
+        }
+      });
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -165,13 +254,11 @@
         wind_bearing: parseFloat(document.getElementById('wind-bearing').value)
       };
       
-      // Validation Check: Min Temp should not exceed Max Temp
       if (payload.temp_min > payload.temp_max) {
         showToast("Minimum temperature cannot exceed maximum temperature.", "error");
         return;
       }
       
-      // Loading State
       btnPredict.disabled = true;
       btnPredict.innerHTML = `<span>Processing Climate Pipeline...</span> <div class="skeleton" style="width: 20px; height: 20px; border-radius: 50%;"></div>`;
       
@@ -183,36 +270,76 @@
         
         activePredictionId = result.id;
         
-        // Update circular gauge
         const circumference = 502;
         const offset = circumference - (result.risk_score / 100) * circumference;
         gaugeProgress.style.strokeDashoffset = offset;
         
-        // Color gauge stroke according to risk
-        let strokeColor = '#10B981'; // Green
+        let strokeColor = '#10B981';
         let badgeClass = 'risk-low';
         if (result.risk_category === 'Moderate Risk') {
-          strokeColor = '#F59E0B'; // Orange
+          strokeColor = '#F59E0B';
           badgeClass = 'risk-moderate';
         } else if (result.risk_category === 'High Risk') {
-          strokeColor = '#EF4444'; // Red
+          strokeColor = '#EF4444';
           badgeClass = 'risk-high';
         }
         gaugeProgress.setAttribute('stroke', strokeColor);
         
-        // Set metrics values
         resultScore.innerText = result.risk_score.toFixed(1);
         resultBadge.innerText = result.risk_category;
         resultBadge.className = `risk-level-badge ${badgeClass}`;
         
         resultConfidence.innerText = `${result.confidence}%`;
         resultConfidenceBar.style.width = `${result.confidence}%`;
-        
         resultExplanation.innerText = result.explanation;
         detailsCard.style.opacity = '1';
-        
         btnDownloadPdf.style.display = 'inline-flex';
-        showToast("Risk metrics computed successfully!", "success");
+        
+        // Fetch 5-Day Forecast
+        try {
+          const forecastData = await apiFetch('/api/forecast', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          
+          document.getElementById('forecast-panel').style.display = 'block';
+          
+          const cardContainer = document.getElementById('forecast-cards-container');
+          cardContainer.innerHTML = '';
+          
+          const labels = [];
+          const tempMeans = [];
+          const riskScores = [];
+          const windSpeeds = [];
+          
+          forecastData.forEach(dayData => {
+            labels.push(`Day ${dayData.day}`);
+            tempMeans.push(dayData.temp_mean);
+            riskScores.push(dayData.risk_score);
+            windSpeeds.push(dayData.wind_speed);
+            
+            let dayBadgeClass = 'risk-low';
+            if (dayData.risk_category === 'Moderate Risk') dayBadgeClass = 'risk-moderate';
+            if (dayData.risk_category === 'High Risk') dayBadgeClass = 'risk-high';
+            
+            cardContainer.innerHTML += `
+              <div class="glass-card" style="padding: 16px; text-align: center; border: 1px solid var(--border-glass); box-shadow: none;">
+                <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-secondary);">Day ${dayData.day}</div>
+                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-title); margin-bottom: 2px;">${dayData.temp_mean.toFixed(1)}°C</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;">${dayData.pressure.toFixed(0)} hPa | ${dayData.wind_speed.toFixed(0)} m/s</div>
+                <span class="risk-level-badge ${dayBadgeClass}" style="font-size: 0.65rem; padding: 2px 6px; display: inline-block;">${dayData.risk_category.replace(' Risk', '')}</span>
+                <div style="font-size: 1rem; font-weight: 800; margin-top: 10px; color: var(--primary);">${dayData.risk_score.toFixed(1)}</div>
+              </div>
+            `;
+          });
+          
+          renderForecastChart(labels, tempMeans, riskScores, windSpeeds);
+          
+        } catch (errForecast) {
+          showToast("Failed to fetch climate forecast parameters.", "warning");
+        }
+        
+        showToast("Risk metrics and forecast computed successfully!", "success");
       } catch (err) {
         showToast(err.message, "error");
       } finally {
@@ -221,7 +348,6 @@
       }
     });
     
-    // Download report action
     btnDownloadPdf.addEventListener('click', () => {
       if (activePredictionId) {
         const token = getAuthToken();

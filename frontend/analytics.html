@@ -21,6 +21,7 @@
           <p>Machine learning models validation, evaluation metrics, and feature relevance analysis</p>
         </div>
         <div class="header-actions">
+          <span class="risk-level-badge risk-low" id="analytics-hardware-badge" style="font-size: 0.8rem; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Device: Loading...</span>
           <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
         </div>
       </header>
@@ -91,6 +92,19 @@
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       try {
+        // Fetch hardware diagnostics
+        try {
+          const hw = await apiFetch('/api/hardware');
+          const hwBadge = document.getElementById('analytics-hardware-badge');
+          hwBadge.innerText = `Node: ${hw.execution_mode} (${hw.device_name.split(' ')[0]})`;
+          if (hw.gpu_detected) {
+            hwBadge.style.background = 'var(--primary-light)';
+            hwBadge.style.color = 'var(--primary)';
+          }
+        } catch (hwErr) {
+          console.error("Hardware check failed:", hwErr);
+        }
+
         // Fetch Model Metrics
         const metrics = await apiFetch('/api/model-metrics');
         

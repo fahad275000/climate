@@ -489,6 +489,72 @@ app.get('/api/predictions/report/pdf', authenticateToken, async (req, res) => {
   }
 });
 
+// ==========================================
+// GPU & Hardware Diagnostics Endpoint
+// ==========================================
+app.get('/api/hardware', authenticateToken, (req, res) => {
+  const scriptPath = path.join(__dirname, 'check_hardware.py');
+  exec(`python "${scriptPath}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error("Hardware check error:", error);
+      return res.json({
+        cuda_available: false,
+        gpu_detected: false,
+        device_name: "Generic CPU",
+        driver_version: "N/A",
+        execution_mode: "CPU",
+        is_h200_active: false
+      });
+    }
+    try {
+      const result = JSON.parse(stdout.trim());
+      res.json(result);
+    } catch (e) {
+      res.json({
+        cuda_available: false,
+        gpu_detected: false,
+        device_name: "Generic CPU",
+        driver_version: "N/A",
+        execution_mode: "CPU",
+        is_h200_active: false
+      });
+    }
+  });
+});
+
+// ==========================================
+// 5-Day Weather & Risk Forecast Endpoint
+// ==========================================
+app.post('/api/forecast', authenticateToken, (req, res) => {
+  const { pressure, global_radiation, temp_mean, temp_min, temp_max, wind_speed, wind_bearing } = req.body;
+  
+  if (
+    pressure === undefined || global_radiation === undefined ||
+    temp_mean === undefined || temp_min === undefined || temp_max === undefined ||
+    wind_speed === undefined || wind_bearing === undefined
+  ) {
+    return res.status(400).json({ error: "Missing required environmental features for forecast." });
+  }
+  
+  const scriptPath = path.join(__dirname, 'forecast.py');
+  const cmd = `python "${scriptPath}" ${pressure} ${global_radiation} ${temp_mean} ${temp_min} ${temp_max} ${wind_speed} ${wind_bearing}`;
+  
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      console.error("Forecast exec error:", error, stderr);
+      return res.status(500).json({ error: "Failed to run forecast parameters." });
+    }
+    
+    try {
+      const forecastResult = JSON.parse(stdout.trim());
+      res.json(forecastResult);
+    } catch (e) {
+      console.error("Parse forecast response error:", e, stdout);
+      res.status(500).json({ error: "Invalid output from forecasting model." });
+    }
+  });
+});
+
 // All other routes redirect to frontend index.html for static hosting
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));

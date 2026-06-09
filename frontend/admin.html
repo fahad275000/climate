@@ -38,6 +38,11 @@
             <span style="font-weight: 600; font-size: 0.9rem;">Model Status:</span>
             <span class="risk-level-badge risk-low" id="retrain-status">Loading...</span>
           </div>
+
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 600; font-size: 0.9rem;">Execution Device:</span>
+            <span class="risk-level-badge risk-low" id="gpu-execution-badge" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-glass);">Loading...</span>
+          </div>
           
           <div style="font-size: 0.85rem; color: var(--text-muted);" id="last-trained-time">
             Last Rebuilt: N/A
@@ -247,6 +252,29 @@
       window.location.href = `/api/predictions/report/pdf?id=${id}&authorization=Bearer ${token}`;
     };
 
+    async function loadHardwareDiagnostics() {
+      try {
+        const hw = await apiFetch('/api/hardware');
+        const badge = document.getElementById('gpu-execution-badge');
+        badge.innerText = hw.execution_mode;
+        
+        if (hw.gpu_detected) {
+          badge.style.background = 'var(--primary-light)';
+          badge.style.color = 'var(--primary)';
+          addConsoleLog(`Hardware check: Detected connected graphics card: ${hw.device_name} (CUDA: ${hw.cuda_available ? 'Active' : 'Inactive'}).`, 'success');
+          if (hw.is_h200_active) {
+            addConsoleLog(`High-Performance Node: NVIDIA H200 GPU is active and managing training layers.`, 'success');
+          }
+        } else {
+          badge.style.background = 'var(--bg-tertiary)';
+          badge.style.color = 'var(--text-secondary)';
+          addConsoleLog(`Hardware check: GPU acceleration disabled/not found. Executing on CPU: ${hw.device_name}.`, 'info');
+        }
+      } catch (err) {
+        addConsoleLog(`Failed to fetch hardware status: ${err.message}`, 'error');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       if (getUserRole() !== 'admin') {
         showToast("Unauthorized page redirect.", "error");
@@ -256,6 +284,7 @@
       
       checkRetrainStatus();
       loadAdminData();
+      loadHardwareDiagnostics();
     });
   </script>
 </body>
