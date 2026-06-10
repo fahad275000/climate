@@ -26,3 +26,10 @@ pip-delete-this-directory.txt
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Server Logs
+backend/*.log
+*.log
+
+# Large binary model/scaler files (too big for GitHub)
+backend/*.pkl
