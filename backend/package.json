@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build": "pip install -r requirements.txt && python train_model.py && python train_forecast.py"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -13,5 +14,8 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
     "pdfkit": "^0.13.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
