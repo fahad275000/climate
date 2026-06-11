@@ -16,13 +16,25 @@ def check_nvidia_smi():
     return None
 
 def main():
-    # Mocking active NVIDIA H200 GPU with CUDA for demonstration/presentation
-    cuda_available = True
-    device_name = "NVIDIA H200 Tensor Core GPU"
-    gpu_detected = True
-    driver_version = "535.104.05"
-    execution_mode = "GPU (CUDA)"
-    is_h200 = True
+    gpu_info = check_nvidia_smi()
+    
+    if gpu_info and len(gpu_info) > 0:
+        # Parse the GPU name and driver version (e.g. "NVIDIA GeForce RTX 2050, 610.47")
+        parts = gpu_info[0].split(',')
+        device_name = parts[0].strip()
+        driver_version = parts[1].strip() if len(parts) > 1 else "Unknown"
+        
+        cuda_available = True
+        gpu_detected = True
+        execution_mode = "GPU (CUDA)"
+        is_h200 = "H200" in device_name
+    else:
+        cuda_available = False
+        gpu_detected = False
+        device_name = "Generic CPU"
+        driver_version = "N/A"
+        execution_mode = "CPU"
+        is_h200 = False
     
     status = {
         "cuda_available": cuda_available,
