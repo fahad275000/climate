@@ -301,7 +301,7 @@ app.post('/api/predict', authenticateToken, async (req, res) => {
       });
       
       await db.logAudit(req.user.username, 'predict', `Created climate prediction. Score: ${predResult.risk_score}`);
-      res.json(saved);
+      res.json({ ...saved, predicted_label: predResult.predicted_label });
     } catch (e) {
       console.error("Parse prediction response error:", e, stdout);
       res.status(500).json({ error: "Invalid output from prediction model." });
@@ -404,6 +404,27 @@ app.get('/api/audit-logs', authenticateToken, requireAdmin, async (req, res) => 
 });
 
 // ==========================================
+// Helper to run 5-day forecast for PDF generator
+// ==========================================
+function runForecastHelper(pred) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, 'forecast.py');
+    const cmd = `python "${scriptPath}" ${pred.pressure} ${pred.global_radiation} ${pred.temp_mean} ${pred.temp_min} ${pred.temp_max} ${pred.wind_speed} ${pred.wind_bearing}`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        try {
+          resolve(JSON.parse(stdout.trim()));
+        } catch (e) {
+          reject(e);
+        }
+      }
+    });
+  });
+}
+
+// ==========================================
 // PDF Report Generator Endpoint
 // ==========================================
 app.get('/api/predictions/report/pdf', authenticateToken, async (req, res) => {
@@ -418,6 +439,14 @@ app.get('/api/predictions/report/pdf', authenticateToken, async (req, res) => {
     // Check ownership
     if (req.user.role !== 'admin' && pred.username !== req.user.username) {
       return res.status(403).json({ error: "Access forbidden. Report belongs to another user." });
+    }
+
+    // Run 5-Day Forecast dynamically
+    let forecast = [];
+    try {
+      forecast = await runForecastHelper(pred);
+    } catch (errForecast) {
+      console.error("Failed to run forecast parameters for PDF:", errForecast);
     }
     
     const doc = new PDFDocument({ margin: 50 });
@@ -506,15 +535,91 @@ app.get('/api/predictions/report/pdf', authenticateToken, async (req, res) => {
     
     // AI Explanation Section
     doc.moveDown(3);
-    doc.fillColor(primaryColor).fontSize(14).font('Helvetica-Bold').text('AI Explanation & Intelligence Report', 50, 550);
-    doc.fillColor('#F0FDFA').rect(50, 570, 512, 70).fill();
-    doc.strokeColor('#CCFBF1').rect(50, 570, 512, 70).stroke();
+    doc.fillColor(primaryColor).fontSize(14).font('Helvetica-Bold').text('AI Explanation & Intelligence Report', 50, 530);
+    doc.fillColor('#F0FDFA').rect(50, 550, 512, 70).fill();
+    doc.strokeColor('#CCFBF1').rect(50, 550, 512, 70).stroke();
     
-    doc.fillColor(primaryColor).fontSize(10).font('Helvetica-Bold').text('AI Generated Explanation:', 65, 585);
-    doc.fillColor(textColor).fontSize(10).font('Helvetica-Oblique').text(`"${pred.explanation}"`, 65, 605, { width: 480 });
+    doc.fillColor(primaryColor).fontSize(10).font('Helvetica-Bold').text('AI Generated Explanation:', 65, 565);
+    doc.fillColor(textColor).fontSize(10).font('Helvetica-Oblique').text(`"${pred.explanation}"`, 65, 585, { width: 480 });
     
-    // Footer Section
-    doc.fillColor('#9CA3AF').fontSize(8).font('Helvetica').text('Disclaimer: This report is generated automatically by the AI Climate Risk Intelligence model using meteorological inputs. Predictions are mathematical estimations based on past models and should be used with professional diligence.', 50, 720, { align: 'center', width: 512 });
+    // Page 1 Footer
+    doc.fillColor('#9CA3AF').fontSize(8).font('Helvetica').text('Disclaimer: This report is generated automatically by the AI Climate Risk Intelligence model using meteorological inputs. Predictions are mathematical estimations based on past models and should be used with professional diligence.', 50, 680, { align: 'center', width: 512 });
+    
+    // Add Page 2 for 5-Day Forecast if available
+    if (forecast && forecast.length > 0) {
+      doc.addPage();
+      
+      // Page 2 Header Banner
+      doc.fillColor(primaryColor).rect(0, 0, 612, 100).fill();
+      doc.fillColor('#FFFFFF').fontSize(16).font('Helvetica-Bold').text('FUTURE PROJECTION VECTORS (5-DAY FORECAST)', 50, 42);
+      doc.fontSize(9).font('Helvetica').text('Autoregressive weather elements & index metrics over a 5-step horizon.', 50, 68);
+      
+      doc.moveDown(4);
+      
+      // Table Header for Forecast
+      const forecastStartY = 130;
+      doc.fillColor(lightBg).rect(50, forecastStartY, 512, 24).fill();
+      doc.fillColor(textColor).fontSize(9).font('Helvetica-Bold');
+      doc.text('Day', 60, forecastStartY + 7);
+      doc.text('Temp Profile (Min - Max)', 105, forecastStartY + 7);
+      doc.text('Pressure', 245, forecastStartY + 7);
+      doc.text('Wind Speed', 320, forecastStartY + 7);
+      doc.text('Solar Intensity', 395, forecastStartY + 7);
+      doc.text('Risk Score', 485, forecastStartY + 7);
+      
+      forecast.forEach((dayData, index) => {
+        const rowY = forecastStartY + 24 + (index * 32);
+        
+        // Alternating row background
+        if (index % 2 === 1) {
+          doc.fillColor('#F9FAFB').rect(50, rowY, 512, 32).fill();
+        }
+        
+        doc.fillColor(textColor).fontSize(9).font('Helvetica');
+        
+        // Day Label
+        doc.font('Helvetica-Bold').text(`Day ${dayData.day}`, 60, rowY + 11);
+        
+        // Temperature range & mean
+        doc.font('Helvetica').text(`${dayData.temp_mean.toFixed(1)}°C (${dayData.temp_min.toFixed(1)} - ${dayData.temp_max.toFixed(1)})`, 105, rowY + 11);
+        
+        // Pressure
+        doc.text(`${dayData.pressure.toFixed(0)} hPa`, 245, rowY + 11);
+        
+        // Wind Speed
+        doc.text(`${dayData.wind_speed.toFixed(1)} m/s`, 320, rowY + 11);
+        
+        // Solar Intensity
+        doc.text(`${dayData.global_radiation.toFixed(2)} kW/m²`, 395, rowY + 11);
+        
+        // Risk
+        let riskColor = '#10B981'; // green
+        if (dayData.risk_category === 'Moderate Risk') riskColor = '#F59E0B'; // orange
+        if (dayData.risk_category === 'High Risk') riskColor = '#EF4444'; // red
+        
+        doc.fillColor(riskColor).font('Helvetica-Bold').text(`${dayData.risk_score.toFixed(1)}%`, 485, rowY + 6);
+        doc.fillColor('#9CA3AF').fontSize(7).font('Helvetica').text(dayData.risk_category.replace(' Risk', ''), 485, rowY + 18);
+        
+        // Horizontal line
+        doc.moveTo(50, rowY + 32).lineTo(562, rowY + 32).strokeColor('#F3F4F6').stroke();
+      });
+      
+      // Add a visual forecast notes card
+      doc.moveDown(3);
+      doc.fillColor('#F0FDF4').rect(50, 340, 512, 90).fill();
+      doc.strokeColor('#BBF7D0').rect(50, 340, 512, 90).stroke();
+      
+      doc.fillColor(primaryColor).fontSize(10).font('Helvetica-Bold').text('Forecasting Summary & Trends:', 65, 355);
+      
+      const avgTemp = forecast.reduce((acc, d) => acc + d.temp_mean, 0) / forecast.length;
+      const maxRisk = Math.max(...forecast.map(d => d.risk_score));
+      const summaryText = `Over the next 5 days, the average forecasted mean temperature is ${avgTemp.toFixed(1)}°C, with a maximum climate hazard risk score of ${maxRisk.toFixed(1)}% projected during this period. These projections are calculated using the trained multi-layer decision forecaster model.`;
+      
+      doc.fillColor(textColor).fontSize(9).font('Helvetica').text(summaryText, 65, 375, { width: 480, lineGap: 3 });
+      
+      // Page 2 Footer
+      doc.fillColor('#9CA3AF').fontSize(8).font('Helvetica').text('Disclaimer: This report is generated automatically by the AI Climate Risk Intelligence model using meteorological inputs. Predictions are mathematical estimations based on past models and should be used with professional diligence.', 50, 680, { align: 'center', width: 512 });
+    }
     
     doc.end();
   } catch (err) {

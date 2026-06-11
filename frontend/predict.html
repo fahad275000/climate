@@ -17,142 +17,180 @@
     <main class="main-content">
       <header class="top-header">
         <div class="page-title">
-          <h1>Climate Risk Calculator</h1>
-          <p>Input current weather conditions to calculate environmental risk index</p>
+          <h1>AI Climate Risk Predictor Workspace</h1>
+          <p>Modify input parameters below to simulate environmental states and compute hazard models.</p>
         </div>
-        <div class="header-actions">
+        <div class="header-actions" style="gap: 12px;">
+          <button id="btn-reset" class="reset-btn">Reset to Averages</button>
           <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
         </div>
       </header>
       
       <!-- Prediction System Layout -->
-      <div class="prediction-results" style="grid-template-columns: 1.2fr 0.8fr; align-items: start;">
+      <div class="prediction-results" style="grid-template-columns: 1.2fr 0.8fr; align-items: start; margin-bottom: 24px;">
         
-        <!-- Form Card -->
-        <div class="glass-card">
-          <h3 style="margin-bottom: 24px;">Environmental Parameters</h3>
+        <!-- Form Card (Left Column) -->
+        <div class="glass-card" style="padding: 24px;">
           <form id="prediction-form">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-              <div class="form-group">
-                <label for="pressure">Atmospheric Pressure (Pressure)</label>
-                <input type="number" step="0.1" min="950" max="1050" id="pressure" class="form-control" placeholder="e.g. 1011.4" required value="1011.4">
-                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 950 - 1050 hPa</small>
+            <!-- Pressure Slider -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="slider-label">Barometric Pressure</span>
+                <span class="slider-value-box" id="val-pressure">1011.4 hPa</span>
               </div>
-              
-              <div class="form-group">
-                <label for="radiation">Global Solar Radiation (global_radiation)</label>
-                <input type="number" step="0.01" min="0.0" max="5.0" id="radiation" class="form-control" placeholder="e.g. 1.3" required value="1.3">
-                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 0.0 - 5.0 kW/m²</small>
-              </div>
-              
-              <div class="form-group">
-                <label for="temp-mean">Mean Temperature (temp_mean(c))</label>
-                <input type="number" step="0.1" min="-20" max="50" id="temp-mean" class="form-control" placeholder="e.g. 15.2" required value="15.2">
-                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: -20 to 50 °C</small>
-              </div>
-              
-              <div class="form-group">
-                <label for="temp-min">Minimum Temperature (temp_min(c))</label>
-                <input type="number" step="0.1" min="-30" max="40" id="temp-min" class="form-control" placeholder="e.g. 10.1" required value="10.1">
-                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: -30 to 40 °C</small>
-              </div>
-              
-              <div class="form-group">
-                <label for="temp-max">Maximum Temperature (temp_max(c))</label>
-                <input type="number" step="0.1" min="-10" max="60" id="temp-max" class="form-control" placeholder="e.g. 20.3" required value="20.3">
-                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: -10 to 60 °C</small>
-              </div>
-              
-              <div class="form-group">
-                <label for="wind-speed">Wind Speed (Wind_Speed)</label>
-                <input type="number" step="0.1" min="0.0" max="50.0" id="wind-speed" class="form-control" placeholder="e.g. 4.8" required value="4.8">
-                <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 0.0 - 50.0 m/s</small>
+              <input type="range" min="980" max="1040" step="0.1" value="1011.4" class="custom-range" id="pressure">
+              <div class="slider-footer-labels">
+                <span>980 hPa (Low / Stormy)</span>
+                <span>Avg: 1011.4 hPa</span>
+                <span>1040 hPa (High / Stable)</span>
               </div>
             </div>
-            
-            <div class="form-group" style="margin-top: 10px;">
-              <label for="wind-bearing">Wind Bearing (Wind_Bearing)</label>
-              <input type="number" step="1" min="0" max="360" id="wind-bearing" class="form-control" placeholder="e.g. 192" required value="192">
-              <small style="color: var(--text-muted); font-size: 0.75rem;">Range: 0 - 360 degrees</small>
+
+            <!-- Global Solar Radiation Slider -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="slider-label">Global Solar Radiation</span>
+                <span class="slider-value-box" id="val-radiation">1.31 kW/m²</span>
+              </div>
+              <input type="range" min="0.00" max="4.00" step="0.01" value="1.31" class="custom-range" id="radiation">
+              <div class="slider-footer-labels">
+                <span>0.00 kW/m² (Cloudy)</span>
+                <span>Avg: 1.31 kW/m²</span>
+                <span>4.00 kW/m² (Intense Heat)</span>
+              </div>
             </div>
-            
-            <button type="submit" id="btn-predict" class="btn btn-primary" style="width: 100%; margin-top: 12px; padding: 12px;">
-              <span>Calculate Climate Risk Index</span> <span>🔮</span>
+
+            <!-- Temperature Profile Setup Card -->
+            <div class="temp-setup-card">
+              <div class="temp-setup-title">
+                <span>🌡️</span> <span>Temperature Profile Setup</span>
+              </div>
+              <div class="temp-sliders-grid">
+                <!-- Min Temp -->
+                <div class="temp-slider-col">
+                  <div class="temp-slider-header">
+                    <span class="temp-slider-label">Min Temp</span>
+                    <span class="temp-slider-value" id="val-temp-min">10.1°C</span>
+                  </div>
+                  <input type="range" min="-30" max="40" step="0.1" value="10.1" class="custom-range" id="temp-min">
+                </div>
+                <!-- Mean Temp -->
+                <div class="temp-slider-col">
+                  <div class="temp-slider-header">
+                    <span class="temp-slider-label">Mean Temp</span>
+                    <span class="temp-slider-value" id="val-temp-mean">15.2°C</span>
+                  </div>
+                  <input type="range" min="-20" max="50" step="0.1" value="15.2" class="custom-range" id="temp-mean">
+                </div>
+                <!-- Max Temp -->
+                <div class="temp-slider-col">
+                  <div class="temp-slider-header">
+                    <span class="temp-slider-label">Max Temp</span>
+                    <span class="temp-slider-value" id="val-temp-max">20.3°C</span>
+                  </div>
+                  <input type="range" min="-10" max="60" step="0.1" value="20.3" class="custom-range" id="temp-max">
+                </div>
+              </div>
+            </div>
+
+            <!-- Wind Controls -->
+            <div class="wind-controls-row">
+              <div class="slider-container" style="margin-bottom: 0;">
+                <div class="slider-header">
+                  <span class="slider-label">Wind Velocity</span>
+                  <span class="slider-value-box" id="val-wind-speed">4.8 m/s</span>
+                </div>
+                <input type="range" min="0.0" max="50.0" step="0.1" value="4.8" class="custom-range" id="wind-speed">
+              </div>
+              <div class="slider-container" style="margin-bottom: 0;">
+                <div class="slider-header">
+                  <span class="slider-label">Wind Bearing</span>
+                  <span class="slider-value-box" id="val-wind-bearing">192°</span>
+                </div>
+                <input type="range" min="0" max="360" step="1" value="192" class="custom-range" id="wind-bearing">
+              </div>
+            </div>
+
+            <!-- Execution Button -->
+            <button type="submit" id="btn-predict" class="btn-execute" style="margin-top: 16px;">
+              <span>✨ EXECUTE HAZARD SCORING MODEL</span> <span>➔</span>
             </button>
           </form>
         </div>
         
-        <!-- Results Column -->
-        <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Results Column (Right Column) -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
           
           <!-- Gauge Card -->
           <div class="glass-card" style="text-align: center;">
-            <h3 style="margin-bottom: 20px;">Calculated Index</h3>
+            <div class="results-header-lbl">HAZARD INDEX GAUGE</div>
             
-            <div class="gauge-container" style="margin: 0 auto 16px;">
+            <div class="gauge-container" style="margin: 0 auto 8px; padding: 10px;">
               <div class="gauge-circle">
                 <svg class="gauge-svg" viewBox="0 0 200 200">
                   <circle class="gauge-bg" cx="100" cy="100" r="80"></circle>
-                  <circle class="gauge-val" id="gauge-progress" cx="100" cy="100" r="80" stroke="#0F766E" stroke-dasharray="502" stroke-dashoffset="502"></circle>
+                  <circle class="gauge-val" id="gauge-progress" cx="100" cy="100" r="80" stroke="#10B981" stroke-dasharray="502" stroke-dashoffset="502"></circle>
                 </svg>
-                <div class="gauge-text">
-                  <div class="gauge-score" id="result-score">0.0</div>
-                  <div class="gauge-lbl">SCORE</div>
+                <div class="gauge-text" style="width: 100%;">
+                  <div class="gauge-score-large" id="result-score">0.0%</div>
+                  <div id="result-badge-container">
+                    <span class="risk-level-badge risk-low" id="result-badge" style="font-size: 0.75rem; padding: 4px 10px;">Low Risk</span>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div id="result-badge-container" style="margin-bottom: 12px;">
-              <span class="risk-level-badge risk-low" id="result-badge">Enter Params</span>
+
+            <!-- Confidence & Raw Label Metrics -->
+            <div class="gauge-sub-metrics">
+              <div class="gauge-metric-col">
+                <div class="gauge-metric-lbl">Confidence</div>
+                <div class="gauge-metric-val" id="result-confidence">0.0%</div>
+              </div>
+              <div class="gauge-metric-col" style="border-left: 1px solid var(--border-glass);">
+                <div class="gauge-metric-lbl">Raw Label</div>
+                <div class="gauge-metric-val teal" id="result-raw-label">0.000</div>
+              </div>
             </div>
           </div>
           
-          <!-- Explanation details -->
-          <div class="glass-card result-details-card" id="details-card" style="opacity: 0.6;">
-            <h3>Decision Parameters</h3>
-            <div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span style="font-weight: 500; font-size: 0.9rem;">Confidence Rating:</span>
-                <span id="result-confidence" style="font-weight: 700; font-size: 0.9rem; color: var(--primary);">0%</span>
-              </div>
-              <div class="confidence-bar-container">
-                <div class="confidence-bar-fill" id="result-confidence-bar" style="width: 0%;"></div>
+          <!-- AI Diagnostic Explanation card -->
+          <div class="glass-card ai-diagnostic-card" id="details-card">
+            <div class="ai-diagnostic-icon-box">
+              ✨
+            </div>
+            <div class="ai-diagnostic-content">
+              <div class="ai-diagnostic-title">AI Diagnostic Explanation</div>
+              <div class="ai-diagnostic-text" id="result-explanation">
+                "Low climate risk. Weather parameters are within standard, safe environmental ranges."
               </div>
             </div>
-            
-            <div style="margin-top: 16px; border-top: 1px solid var(--border-glass); padding-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          </div>
+
+          <!-- Execution node info and Report -->
+          <div class="glass-card" style="padding: 16px 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
               <span style="font-weight: 500; color: var(--text-secondary);">Execution Node:</span>
-              <span id="gpu-status-line" style="font-weight: 600; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-secondary);">Loading...</span>
+              <span id="gpu-status-line" style="font-weight: 600; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: var(--bg-tertiary); color: var(--text-secondary);">Loading...</span>
             </div>
-            
-            <div style="border-top: 1px solid var(--border-glass); padding-top: 16px; margin-top: 16px;">
-              <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-                <span>🧠</span> <span>AI Climate Explanation</span>
-              </div>
-              <p style="font-size: 0.85rem; font-style: italic; color: var(--text-secondary);" id="result-explanation">
-                Submit the weather features to view an intelligent summary generated by the decision tree model layers.
-              </p>
-            </div>
-            
-            <button id="btn-download-pdf" class="btn btn-secondary btn-outline" style="width: 100%; display: none;">
+            <button id="btn-download-pdf" class="btn btn-secondary btn-outline" style="width: 100%; margin-top: 12px; display: none;">
               <span>📄</span> <span>Export PDF Report</span>
             </button>
           </div>
+
         </div>
       </div>
 
       <!-- 5-Day Forecast Panel -->
-      <section class="glass-card" id="forecast-panel" style="margin-top: 32px; display: none;">
-        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-          <span>🔮</span> <span>5-Day Climate Risk & Weather Forecast</span>
-        </h3>
-        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 24px;">Autoregressive prediction arrays for weather elements and index metrics over a 5-step horizon.</p>
-        
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px;" id="forecast-cards-container">
-          <!-- Populated dynamically -->
+      <section class="glass-card" id="forecast-panel" style="margin-top: 32px;">
+        <div class="forecast-section-title">
+          <span>✓</span> <span>Future Projection Vectors (Next 5 Days)</span>
         </div>
         
-        <div style="height: 320px; position: relative;">
+        <div class="forecast-grid" id="forecast-cards-container">
+          <!-- Populated dynamically (preloaded or skeleton state) -->
+        </div>
+        
+        <div style="height: 250px; position: relative; margin-top: 24px;">
           <canvas id="forecast-trend-chart"></canvas>
         </div>
       </section>
@@ -163,17 +201,86 @@
   <script>
     const form = document.getElementById('prediction-form');
     const btnPredict = document.getElementById('btn-predict');
+    const btnReset = document.getElementById('btn-reset');
     const gaugeProgress = document.getElementById('gauge-progress');
     const resultScore = document.getElementById('result-score');
     const resultBadge = document.getElementById('result-badge');
     const resultConfidence = document.getElementById('result-confidence');
-    const resultConfidenceBar = document.getElementById('result-confidence-bar');
+    const resultRawLabel = document.getElementById('result-raw-label');
     const resultExplanation = document.getElementById('result-explanation');
     const detailsCard = document.getElementById('details-card');
     const btnDownloadPdf = document.getElementById('btn-download-pdf');
     
+    // Slider elements
+    const pressureSlider = document.getElementById('pressure');
+    const radiationSlider = document.getElementById('radiation');
+    const tempMinSlider = document.getElementById('temp-min');
+    const tempMeanSlider = document.getElementById('temp-mean');
+    const tempMaxSlider = document.getElementById('temp-max');
+    const windSpeedSlider = document.getElementById('wind-speed');
+    const windBearingSlider = document.getElementById('wind-bearing');
+    
     let activePredictionId = null;
     let forecastChartInstance = null;
+
+    // Real-time slider values syncing
+    function updateSliderDisplays() {
+      document.getElementById('val-pressure').innerText = `${parseFloat(pressureSlider.value).toFixed(1)} hPa`;
+      document.getElementById('val-radiation').innerText = `${parseFloat(radiationSlider.value).toFixed(2)} kW/m²`;
+      document.getElementById('val-temp-min').innerText = `${parseFloat(tempMinSlider.value).toFixed(1)}°C`;
+      document.getElementById('val-temp-mean').innerText = `${parseFloat(tempMeanSlider.value).toFixed(1)}°C`;
+      document.getElementById('val-temp-max').innerText = `${parseFloat(tempMaxSlider.value).toFixed(1)}°C`;
+      document.getElementById('val-wind-speed').innerText = `${parseFloat(windSpeedSlider.value).toFixed(1)} m/s`;
+      document.getElementById('val-wind-bearing').innerText = `${parseInt(windBearingSlider.value)}°`;
+    }
+
+    pressureSlider.addEventListener('input', updateSliderDisplays);
+    radiationSlider.addEventListener('input', updateSliderDisplays);
+    windSpeedSlider.addEventListener('input', updateSliderDisplays);
+    windBearingSlider.addEventListener('input', updateSliderDisplays);
+
+    // Temperature constraint checking dynamically
+    tempMinSlider.addEventListener('input', () => {
+      const minVal = parseFloat(tempMinSlider.value);
+      const meanVal = parseFloat(tempMeanSlider.value);
+      const maxVal = parseFloat(tempMaxSlider.value);
+      
+      if (minVal > meanVal) {
+        tempMeanSlider.value = minVal;
+      }
+      if (minVal > maxVal) {
+        tempMaxSlider.value = minVal;
+      }
+      updateSliderDisplays();
+    });
+
+    tempMeanSlider.addEventListener('input', () => {
+      const minVal = parseFloat(tempMinSlider.value);
+      const meanVal = parseFloat(tempMeanSlider.value);
+      const maxVal = parseFloat(tempMaxSlider.value);
+      
+      if (meanVal < minVal) {
+        tempMinSlider.value = meanVal;
+      }
+      if (meanVal > maxVal) {
+        tempMaxSlider.value = meanVal;
+      }
+      updateSliderDisplays();
+    });
+
+    tempMaxSlider.addEventListener('input', () => {
+      const minVal = parseFloat(tempMinSlider.value);
+      const meanVal = parseFloat(tempMeanSlider.value);
+      const maxVal = parseFloat(tempMaxSlider.value);
+      
+      if (maxVal < meanVal) {
+        tempMeanSlider.value = maxVal;
+      }
+      if (maxVal < minVal) {
+        tempMinSlider.value = maxVal;
+      }
+      updateSliderDisplays();
+    });
 
     function renderForecastChart(labels, temps, risks, winds) {
       const ctx = document.getElementById('forecast-trend-chart').getContext('2d');
@@ -181,9 +288,10 @@
         forecastChartInstance.destroy();
       }
       
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const textColor = isDark ? '#D1D5DB' : '#1F2937';
-      const gridColor = isDark ? '#374151' : '#E5E7EB';
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || 
+                      (document.documentElement.getAttribute('data-theme') === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const textColor = '#D1D5DB'; // Always show light text for dark cards
+      const gridColor = 'rgba(255, 255, 255, 0.05)';
       
       forecastChartInstance = new Chart(ctx, {
         type: 'line',
@@ -246,26 +354,19 @@
       });
     }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
+    async function triggerPrediction() {
       const payload = {
-        pressure: parseFloat(document.getElementById('pressure').value),
-        global_radiation: parseFloat(document.getElementById('radiation').value),
-        temp_mean: parseFloat(document.getElementById('temp-mean').value),
-        temp_min: parseFloat(document.getElementById('temp-min').value),
-        temp_max: parseFloat(document.getElementById('temp-max').value),
-        wind_speed: parseFloat(document.getElementById('wind-speed').value),
-        wind_bearing: parseFloat(document.getElementById('wind-bearing').value)
+        pressure: parseFloat(pressureSlider.value),
+        global_radiation: parseFloat(radiationSlider.value),
+        temp_mean: parseFloat(tempMeanSlider.value),
+        temp_min: parseFloat(tempMinSlider.value),
+        temp_max: parseFloat(tempMaxSlider.value),
+        wind_speed: parseFloat(windSpeedSlider.value),
+        wind_bearing: parseFloat(windBearingSlider.value)
       };
       
-      if (payload.temp_min > payload.temp_max) {
-        showToast("Minimum temperature cannot exceed maximum temperature.", "error");
-        return;
-      }
-      
       btnPredict.disabled = true;
-      btnPredict.innerHTML = `<span>Processing Climate Pipeline...</span> <div class="skeleton" style="width: 20px; height: 20px; border-radius: 50%;"></div>`;
+      btnPredict.innerHTML = `<span>PROCESSING MODEL PIPELINE...</span> <div class="skeleton" style="width: 16px; height: 16px; border-radius: 50%;"></div>`;
       
       try {
         const result = await apiFetch('/api/predict', {
@@ -290,14 +391,13 @@
         }
         gaugeProgress.setAttribute('stroke', strokeColor);
         
-        resultScore.innerText = result.risk_score.toFixed(1);
+        resultScore.innerText = `${result.risk_score.toFixed(1)}%`;
         resultBadge.innerText = result.risk_category;
         resultBadge.className = `risk-level-badge ${badgeClass}`;
         
-        resultConfidence.innerText = `${result.confidence}%`;
-        resultConfidenceBar.style.width = `${result.confidence}%`;
-        resultExplanation.innerText = result.explanation;
-        detailsCard.style.opacity = '1';
+        resultConfidence.innerText = `${result.confidence.toFixed(1)}%`;
+        resultRawLabel.innerText = result.predicted_label !== undefined ? result.predicted_label.toFixed(3) : (result.risk_score / 33.33).toFixed(3);
+        resultExplanation.innerText = `"${result.explanation}"`;
         btnDownloadPdf.style.display = 'inline-flex';
         
         // Fetch 5-Day Forecast
@@ -306,8 +406,6 @@
             method: 'POST',
             body: JSON.stringify(payload)
           });
-          
-          document.getElementById('forecast-panel').style.display = 'block';
           
           const cardContainer = document.getElementById('forecast-cards-container');
           cardContainer.innerHTML = '';
@@ -324,16 +422,41 @@
             windSpeeds.push(dayData.wind_speed);
             
             let dayBadgeClass = 'risk-low';
-            if (dayData.risk_category === 'Moderate Risk') dayBadgeClass = 'risk-moderate';
-            if (dayData.risk_category === 'High Risk') dayBadgeClass = 'risk-high';
+            let highlightClass = 'low';
+            if (dayData.risk_category === 'Moderate Risk') {
+              dayBadgeClass = 'risk-moderate';
+              highlightClass = 'moderate';
+            }
+            if (dayData.risk_category === 'High Risk') {
+              dayBadgeClass = 'risk-high';
+              highlightClass = 'high';
+            }
             
             cardContainer.innerHTML += `
-              <div class="glass-card" style="padding: 16px; text-align: center; border: 1px solid var(--border-glass); box-shadow: none;">
-                <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-secondary);">Day ${dayData.day}</div>
-                <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-title); margin-bottom: 2px;">${dayData.temp_mean.toFixed(1)}°C</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 8px;">${dayData.pressure.toFixed(0)} hPa | ${dayData.wind_speed.toFixed(0)} m/s</div>
-                <span class="risk-level-badge ${dayBadgeClass}" style="font-size: 0.65rem; padding: 2px 6px; display: inline-block;">${dayData.risk_category.replace(' Risk', '')}</span>
-                <div style="font-size: 1rem; font-weight: 800; margin-top: 10px; color: var(--primary);">${dayData.risk_score.toFixed(1)}</div>
+              <div class="forecast-card-revamp">
+                <div class="forecast-card-highlight ${highlightClass}"></div>
+                <div class="forecast-day-lbl">Day ${dayData.day} Forecast</div>
+                <div class="forecast-temp-large">${dayData.temp_mean.toFixed(1)}°C</div>
+                <div class="forecast-temp-range">${dayData.temp_min.toFixed(1)}°C - ${dayData.temp_max.toFixed(1)}°C</div>
+                
+                <div class="forecast-metrics-list">
+                  <div class="forecast-metric-row">
+                    <span class="forecast-metric-name">Pressure:</span>
+                    <span class="forecast-metric-value">${dayData.pressure.toFixed(0)} hPa</span>
+                  </div>
+                  <div class="forecast-metric-row">
+                    <span class="forecast-metric-name">Wind speed:</span>
+                    <span class="forecast-metric-value">${dayData.wind_speed.toFixed(1)} m/s</span>
+                  </div>
+                  <div class="forecast-metric-row">
+                    <span class="forecast-metric-name">Solar Intensity:</span>
+                    <span class="forecast-metric-value">${dayData.global_radiation.toFixed(2)} kW/m²</span>
+                  </div>
+                </div>
+                
+                <div class="forecast-risk-pill ${highlightClass}">
+                  ${dayData.risk_score.toFixed(1)}% Risk
+                </div>
               </div>
             `;
           });
@@ -344,15 +467,35 @@
           showToast("Failed to fetch climate forecast parameters.", "warning");
         }
         
-        showToast("Risk metrics and forecast computed successfully!", "success");
       } catch (err) {
         showToast(err.message, "error");
       } finally {
         btnPredict.disabled = false;
-        btnPredict.innerHTML = `<span>Calculate Climate Risk Index</span> <span>🔮</span>`;
+        btnPredict.innerHTML = `<span>✨ EXECUTE HAZARD SCORING MODEL</span> <span>➔</span>`;
       }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await triggerPrediction();
+      showToast("Risk metrics and forecast computed successfully!", "success");
     });
     
+    // Reset to Baseline Averages
+    btnReset.addEventListener('click', async () => {
+      pressureSlider.value = 1011.4;
+      radiationSlider.value = 1.31;
+      tempMinSlider.value = 10.1;
+      tempMeanSlider.value = 15.2;
+      tempMaxSlider.value = 20.3;
+      windSpeedSlider.value = 4.8;
+      windBearingSlider.value = 192;
+      
+      updateSliderDisplays();
+      showToast("Reset parameters to system averages.", "info");
+      await triggerPrediction();
+    });
+
     btnDownloadPdf.addEventListener('click', () => {
       if (activePredictionId) {
         const token = getAuthToken();
@@ -379,7 +522,15 @@
         console.error("Failed to fetch hardware diagnostics in predictor page:", err);
       }
     }
-    loadHardwareDiagnostics();
+
+    // Initialize UI and run baseline simulation on load
+    document.addEventListener('DOMContentLoaded', () => {
+      updateSliderDisplays();
+      loadHardwareDiagnostics();
+      // Wait briefly for authentication routing to finish before fetching
+      setTimeout(triggerPrediction, 100);
+    });
   </script>
 </body>
 </html>
+
