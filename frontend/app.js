@@ -122,7 +122,7 @@ function renderSidebar() {
   const adminLink = role === 'admin' ? `
     <li class="nav-item ${activePath.includes('admin.html') ? 'active' : ''}">
       <a href="admin.html">
-        <span class="nav-icon">🛡️</span>
+        <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
         <span>Admin Panel</span>
       </a>
     </li>
@@ -131,31 +131,31 @@ function renderSidebar() {
   sidebarContainer.innerHTML = `
     <div class="sidebar">
       <div class="brand">
-        <div class="brand-logo">🌍</div>
+        <div class="brand-logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
         <div class="brand-name">ClimateRisk</div>
       </div>
       <ul class="nav-links">
         <li class="nav-item ${activePath.includes('dashboard.html') ? 'active' : ''}">
           <a href="dashboard.html">
-            <span class="nav-icon">📊</span>
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
             <span>Dashboard</span>
           </a>
         </li>
         <li class="nav-item ${activePath.includes('predict.html') ? 'active' : ''}">
           <a href="predict.html">
-            <span class="nav-icon">🔮</span>
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></span>
             <span>Climate Predictor</span>
           </a>
         </li>
         <li class="nav-item ${activePath.includes('analytics.html') ? 'active' : ''}">
           <a href="analytics.html">
-            <span class="nav-icon">📈</span>
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
             <span>ML Analytics</span>
           </a>
         </li>
         <li class="nav-item ${activePath.includes('explorer.html') ? 'active' : ''}">
           <a href="explorer.html">
-            <span class="nav-icon">🔍</span>
+            <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
             <span>Data Explorer</span>
           </a>
         </li>
@@ -170,7 +170,7 @@ function renderSidebar() {
           </div>
         </div>
         <button class="btn btn-secondary btn-outline" onclick="logout()" style="width: 100%;">
-          <span>🚪</span> <span>Sign Out</span>
+          <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span> <span>Sign Out</span>
         </button>
       </div>
     </div>
